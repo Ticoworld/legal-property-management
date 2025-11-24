@@ -1,0 +1,395 @@
+// Legal Property Management System - Database Schema
+// Purpose: High-integrity data model for Nigerian legal practitioners
+// Security: PII fields (NIN, BVN) are stored encrypted at application level
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// USER MODEL - The Legal Practitioners
+// ============================================
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified DateTime?
+  name          String?
+  password      String   // Hashed with bcrypt
+  role          UserRole @default(VIEWER)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  auditLogs     AuditLog[]
+  accounts      Account[]
+  sessions      Session[]
+  payments      Payment[]   // Payments recorded by this user
+  
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN       // Full system access
+  ASSOCIATE   // Can create/edit records
+  VIEWER      // Read-only access
+}
+
+// ============================================
+// CLIENT MODEL - The Landlords/Property Owners
+// ============================================
+model Client {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String
+  address   String?
+  
+  // PII - Stored ENCRYPTED at application level
+  // NEVER query raw NIN/BVN directly
+  nin       String?  // National Identification Number (Encrypted)
+  bvn       String?  // Bank Verification Number (Encrypted)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  properties Property[]
+  
+  @@index([email])
+  @@index([lastName])
+  @@index([phone])
+  @@map("clients")
+}
+
+// ============================================
+// PROPERTY MODEL - The Legal Assets
+// ============================================
+model Property {
+  id                 String       @id @default(cuid())
+  address            String
+  city               String
+  state              NigerianState
+  
+  // Title Information
+  titleType          TitleType
+  registrationNumber String       @unique
+  surveyNumber       String?
+  plotNumber         String?
+  
+  // Property Details
+  landArea           Float?       // In square meters
+  buildingArea       Float?       // In square meters
+  propertyType       PropertyType
+  
+  // Ownership
+  ownerId            String
+  owner              Client       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  
+  // Relations
+  tenancies          Tenancy[]
+  documents          Document[]
+  
+  @@index([ownerId])
+  @@index([state])
+  @@index([registrationNumber])
+  @@map("properties")
+}
+
+enum TitleType {
+  CERTIFICATE_OF_OCCUPANCY  // C of O
+  DEED_OF_ASSIGNMENT
+  DEED_OF_CONVEYANCE
+  GOVERNORS_CONSENT
+  REGISTERED_CONVEYANCE
+  POWER_OF_ATTORNEY
+  OTHER
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  MIXED_USE
+  LAND
+}
+
+enum NigerianState {
+  ABIA
+  ADAMAWA
+  AKWA_IBOM
+  ANAMBRA
+  BAUCHI
+  BAYELSA
+  BENUE
+  BORNO
+  CROSS_RIVER
+  DELTA
+  EBONYI
+  EDO
+  EKITI
+  ENUGU
+  FCT
+  GOMBE
+  IMO
+  JIGAWA
+  KADUNA
+  KANO
+  KATSINA
+  KEBBI
+  KOGI
+  KWARA
+  LAGOS
+  NASARAWA
+  NIGER
+  OGUN
+  ONDO
+  OSUN
+  OYO
+  PLATEAU
+  RIVERS
+  SOKOTO
+  TARABA
+  YOBE
+  ZAMFARA
+}
+
+// ============================================
+// TENANCY MODEL - The Lease Agreements
+// ============================================
+model Tenancy {
+  id           String        @id @default(cuid())
+  
+  // Tenant Information
+  tenantName   String
+  tenantEmail  String?
+  tenantPhone  String
+  
+  // Lease Terms
+  startDate    DateTime
+  expiryDate   DateTime      // INDEXED for expiry tracking
+  annualRent   Decimal       @db.Decimal(15, 2)
+  status       TenancyStatus @default(ACTIVE)
+  
+  // Payment Terms
+  paymentFrequency String?    // e.g., "Annually", "Quarterly"
+  securityDeposit  Decimal?   @db.Decimal(15, 2)
+  
+  // Relations
+  propertyId   String
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  payments     Payment[]     // Financial tracking
+  
+  // Timestamps
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@index([propertyId])
+  @@index([expiryDate])  // Critical for automated expiry alerts
+  @@index([status])
+  @@index([tenantName])
+  @@map("tenancies")
+}
+
+enum TenancyStatus {
+  ACTIVE          // Lease is currently active
+  EXPIRED         // Lease has expired
+  NOTICE_SERVED   // Notice to vacate has been served
+  TERMINATED      // Lease was terminated early
+  RENEWED         // Lease was renewed (historical record)
+}
+
+// ============================================
+// DOCUMENT MODEL - Title Documents Storage
+// ============================================
+model Document {
+  id         String   @id @default(uuid())
+  url        String   // Supabase Storage URL
+  name       String   // e.g., "CofO.pdf"
+  type       String   // MIME type e.g., "application/pdf"
+  
+  // Relations
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt  DateTime @default(now())
+  
+  @@index([propertyId])
+  @@map("documents")
+}
+
+// ============================================
+// PAYMENT MODEL - Financial Transaction Tracking
+// ============================================
+model Payment {
+  id           String        @id @default(cuid())
+  
+  // Payment Details
+  amount       Decimal       @db.Decimal(15, 2)
+  date         DateTime      // Payment date (can be backdated)
+  type         PaymentType
+  method       PaymentMethod
+  reference    String?       // Bank reference, cheque number, etc.
+  
+  // Relations
+  tenancyId    String
+  tenancy      Tenancy       @relation(fields: [tenancyId], references: [id], onDelete: Restrict)
+  
+  recordedBy   String
+  recordedByUser User        @relation(fields: [recordedBy], references: [id], onDelete: Restrict)
+  
+  // Audit Trail
+  notes        String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@index([tenancyId])
+  @@index([date])
+  @@index([recordedBy])
+  @@index([type])
+  @@map("payments")
+}
+
+enum PaymentType {
+  RENT              // Regular rent payment
+  SERVICE_CHARGE    // Building maintenance fees
+  LEGAL_FEE         // Lawyer's professional fees
+  CAUTION           // Security deposit/caution fee
+}
+
+enum PaymentMethod {
+  CASH              // Physical cash payment
+  TRANSFER          // Bank transfer/wire transfer
+  CHEQUE            // Bank cheque
+}
+
+// ============================================
+// AUDIT LOG - The Integrity Layer
+// ============================================
+model AuditLog {
+  id          String   @id @default(cuid())
+  
+  // Action Details
+  action      String   // e.g., "CREATE_CLIENT", "UPDATE_PROPERTY"
+  entityType  String   // e.g., "Client", "Property", "Tenancy"
+  entityId    String   // ID of the affected record
+  
+  // Actor
+  performedBy String
+  user        User     @relation(fields: [performedBy], references: [id], onDelete: Cascade)
+  
+  // Context
+  details     Json?    // Stores before/after snapshots
+  ipAddress   String?
+  userAgent   String?
+  
+  // Timestamp (immutable)
+  timestamp   DateTime @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================
+// NOTIFICATION LOG - Legal Proof of Delivery
+// ============================================
+model NotificationLog {
+  id            String             @id @default(cuid())
+  
+  // Notification Details
+  type          NotificationType
+  recipient     String             // Email address or phone number
+  subject       String?
+  message       String             @db.Text
+  
+  // Delivery Status
+  status        NotificationStatus @default(PENDING)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  failureReason String?
+  
+  // Related Entity (for tracking)
+  entityType    String?            // e.g., "Tenancy"
+  entityId      String?
+  
+  // Timestamps
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  
+  @@index([recipient])
+  @@index([status])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("notification_logs")
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  SYSTEM_ALERT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+// ============================================
+// NEXT-AUTH MODELS - Authentication
+// ============================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}

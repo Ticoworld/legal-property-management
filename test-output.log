@@ -1,0 +1,46 @@
+
+> legal-property-management@0.1.0 test:e2e
+> playwright test
+
+
+Running 1 test using 1 worker
+
+Response status: [90mundefined[39m
+Current URL after login: http://localhost:3000/login
+  ✘  1 [chromium] › tests\smoke.spec.ts:7:7 › Critical Path › Legal Workflow (16.2s)
+
+
+  1) [chromium] › tests\smoke.spec.ts:7:7 › Critical Path › Legal Workflow ─────────────────────────
+
+    Error: Login failed: Invalid credentials
+
+      37 |     if (errorVisible) {
+      38 |       const errorMessage = await page.locator('.text-destructive').textContent();
+    > 39 |       throw new Error(`Login failed: ${errorMessage}`);
+         |             ^
+      40 |     }
+      41 |     
+      42 |     await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 5000 }); // redirected to dashboard root
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\smoke.spec.ts:39:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\smoke-Critical-Path-Legal-Workflow-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\smoke-Critical-Path-Legal-Workflow-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\smoke-Critical-Path-Legal-Workflow-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\smoke-Critical-Path-Legal-Workflow-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\smoke.spec.ts:7:7 › Critical Path › Legal Workflow ──────────────────────────
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m
