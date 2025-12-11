@@ -1,0 +1,284 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]: Legal PM
+      - navigation [ref=e6]:
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "Dashboard" [ref=e9] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e10]:
+                - img [ref=e11]
+                - generic [ref=e16]: Dashboard
+          - listitem [ref=e17]:
+            - link "Clients" [ref=e18] [cursor=pointer]:
+              - /url: /clients
+              - generic [ref=e19]:
+                - img [ref=e20]
+                - generic [ref=e25]: Clients
+          - listitem [ref=e26]:
+            - link "Properties" [ref=e27] [cursor=pointer]:
+              - /url: /properties
+              - generic [ref=e28]:
+                - img [ref=e29]
+                - generic [ref=e33]: Properties
+          - listitem [ref=e34]:
+            - link "Maintenance" [ref=e35] [cursor=pointer]:
+              - /url: /maintenance
+              - generic [ref=e36]:
+                - img [ref=e37]
+                - generic [ref=e39]: Maintenance
+          - listitem [ref=e40]:
+            - link "Tenancy Tracking" [ref=e41] [cursor=pointer]:
+              - /url: /tenancies
+              - generic [ref=e42]:
+                - img [ref=e43]
+                - generic [ref=e46]: Tenancy Tracking
+    - banner [ref=e47]:
+      - generic [ref=e48]:
+        - navigation "breadcrumb" [ref=e49]:
+          - list [ref=e50]:
+            - listitem [ref=e51]:
+              - link "Home" [ref=e52] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e53]:
+              - img [ref=e54]
+            - listitem [ref=e56]:
+              - link "Properties" [disabled] [ref=e57]
+        - generic [ref=e58]:
+          - button "Search... ⌘ K" [ref=e59]:
+            - img
+            - generic [ref=e60]: Search...
+            - generic:
+              - generic: ⌘
+              - text: K
+          - generic [ref=e61]:
+            - heading "Global Search" [level=2] [ref=e62]
+            - paragraph [ref=e63]: Search for clients, properties, or tenants
+          - button "Notifications" [ref=e64]:
+            - img
+          - button "N9" [ref=e65]:
+            - generic [ref=e67] [cursor=pointer]: N9
+    - main [ref=e68]:
+      - generic [ref=e70]:
+        - heading "Properties" [level=1] [ref=e72]
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - textbox "Search properties..." [ref=e75]
+            - button "Add Property" [active] [ref=e77]
+          - table [ref=e80]:
+            - rowgroup [ref=e81]:
+              - row "Address Location Owner Status Title Type Action" [ref=e82]:
+                - cell "Address" [ref=e83]
+                - cell "Location" [ref=e84]
+                - cell "Owner" [ref=e85]
+                - cell "Status" [ref=e86]
+                - cell "Title Type" [ref=e87]
+                - cell "Action" [ref=e88]
+            - rowgroup [ref=e89]:
+              - row "Refinery Housing Estate 907612 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e90]:
+                - cell "Refinery Housing Estate 907612" [ref=e91]
+                - cell "Lagos, LAGOS" [ref=e92]
+                - cell "Dangote Refinery" [ref=e93]
+                - cell "PENDING" [ref=e94]:
+                  - generic [ref=e95]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e96]:
+                  - generic [ref=e97]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e98]:
+                  - button "Actions" [ref=e99]:
+                    - img
+                    - generic [ref=e100]: Actions
+              - row "Refinery Housing Estate Test Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e101]:
+                - cell "Refinery Housing Estate Test" [ref=e102]
+                - cell "Lagos, LAGOS" [ref=e103]
+                - cell "Dangote Refinery" [ref=e104]
+                - cell "APPROVED" [ref=e105]:
+                  - generic [ref=e106]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e107]:
+                  - generic [ref=e108]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e109]:
+                  - button "Actions" [ref=e110]:
+                    - img
+                    - generic [ref=e111]: Actions
+              - row "Refinery Housing Estate 130619 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e112]:
+                - cell "Refinery Housing Estate 130619" [ref=e113]
+                - cell "Lagos, LAGOS" [ref=e114]
+                - cell "Dangote Refinery" [ref=e115]
+                - cell "PENDING" [ref=e116]:
+                  - generic [ref=e117]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e118]:
+                  - generic [ref=e119]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e120]:
+                  - button "Actions" [ref=e121]:
+                    - img
+                    - generic [ref=e122]: Actions
+              - row "Refinery Housing Estate 909508 Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e123]:
+                - cell "Refinery Housing Estate 909508" [ref=e124]
+                - cell "Lagos, LAGOS" [ref=e125]
+                - cell "Dangote Refinery" [ref=e126]
+                - cell "APPROVED" [ref=e127]:
+                  - generic [ref=e128]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e129]:
+                  - generic [ref=e130]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e131]:
+                  - button "Actions" [ref=e132]:
+                    - img
+                    - generic [ref=e133]: Actions
+              - row "Refinery Housing Estate 662234 Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e134]:
+                - cell "Refinery Housing Estate 662234" [ref=e135]
+                - cell "Lagos, LAGOS" [ref=e136]
+                - cell "Dangote Refinery" [ref=e137]
+                - cell "APPROVED" [ref=e138]:
+                  - generic [ref=e139]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e140]:
+                  - generic [ref=e141]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e142]:
+                  - button "Actions" [ref=e143]:
+                    - img
+                    - generic [ref=e144]: Actions
+              - row "Refinery Housing Estate 524804 Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e145]:
+                - cell "Refinery Housing Estate 524804" [ref=e146]
+                - cell "Lagos, LAGOS" [ref=e147]
+                - cell "Dangote Refinery" [ref=e148]
+                - cell "APPROVED" [ref=e149]:
+                  - generic [ref=e150]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e151]:
+                  - generic [ref=e152]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e153]:
+                  - button "Actions" [ref=e154]:
+                    - img
+                    - generic [ref=e155]: Actions
+              - row "Refinery Housing Estate 209777 Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e156]:
+                - cell "Refinery Housing Estate 209777" [ref=e157]
+                - cell "Lagos, LAGOS" [ref=e158]
+                - cell "Dangote Refinery" [ref=e159]
+                - cell "APPROVED" [ref=e160]:
+                  - generic [ref=e161]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e162]:
+                  - generic [ref=e163]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e164]:
+                  - button "Actions" [ref=e165]:
+                    - img
+                    - generic [ref=e166]: Actions
+              - row "Refinery Housing Estate 999485 Lagos, LAGOS Dangote Refinery APPROVED IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e167]:
+                - cell "Refinery Housing Estate 999485" [ref=e168]
+                - cell "Lagos, LAGOS" [ref=e169]
+                - cell "Dangote Refinery" [ref=e170]
+                - cell "APPROVED" [ref=e171]:
+                  - generic [ref=e172]: APPROVED
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e173]:
+                  - generic [ref=e174]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e175]:
+                  - button "Actions" [ref=e176]:
+                    - img
+                    - generic [ref=e177]: Actions
+              - row "Refinery Housing Estate 587948 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e178]:
+                - cell "Refinery Housing Estate 587948" [ref=e179]
+                - cell "Lagos, LAGOS" [ref=e180]
+                - cell "Dangote Refinery" [ref=e181]
+                - cell "PENDING" [ref=e182]:
+                  - generic [ref=e183]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e184]:
+                  - generic [ref=e185]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e186]:
+                  - button "Actions" [ref=e187]:
+                    - img
+                    - generic [ref=e188]: Actions
+              - row "Refinery Housing Estate 316867 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e189]:
+                - cell "Refinery Housing Estate 316867" [ref=e190]
+                - cell "Lagos, LAGOS" [ref=e191]
+                - cell "Dangote Refinery" [ref=e192]
+                - cell "PENDING" [ref=e193]:
+                  - generic [ref=e194]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e195]:
+                  - generic [ref=e196]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e197]:
+                  - button "Actions" [ref=e198]:
+                    - img
+                    - generic [ref=e199]: Actions
+              - row "Refinery Housing Estate 682739 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e200]:
+                - cell "Refinery Housing Estate 682739" [ref=e201]
+                - cell "Lagos, LAGOS" [ref=e202]
+                - cell "Dangote Refinery" [ref=e203]
+                - cell "PENDING" [ref=e204]:
+                  - generic [ref=e205]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e206]:
+                  - generic [ref=e207]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e208]:
+                  - button "Actions" [ref=e209]:
+                    - img
+                    - generic [ref=e210]: Actions
+              - row "Refinery Housing Estate 576719 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e211]:
+                - cell "Refinery Housing Estate 576719" [ref=e212]
+                - cell "Lagos, LAGOS" [ref=e213]
+                - cell "Dangote Refinery" [ref=e214]
+                - cell "PENDING" [ref=e215]:
+                  - generic [ref=e216]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e217]:
+                  - generic [ref=e218]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e219]:
+                  - button "Actions" [ref=e220]:
+                    - img
+                    - generic [ref=e221]: Actions
+              - row "Refinery Housing Estate 382208 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e222]:
+                - cell "Refinery Housing Estate 382208" [ref=e223]
+                - cell "Lagos, LAGOS" [ref=e224]
+                - cell "Dangote Refinery" [ref=e225]
+                - cell "PENDING" [ref=e226]:
+                  - generic [ref=e227]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e228]:
+                  - generic [ref=e229]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e230]:
+                  - button "Actions" [ref=e231]:
+                    - img
+                    - generic [ref=e232]: Actions
+              - row "Refinery Housing Estate 650395 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e233]:
+                - cell "Refinery Housing Estate 650395" [ref=e234]
+                - cell "Lagos, LAGOS" [ref=e235]
+                - cell "Dangote Refinery" [ref=e236]
+                - cell "PENDING" [ref=e237]:
+                  - generic [ref=e238]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e239]:
+                  - generic [ref=e240]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e241]:
+                  - button "Actions" [ref=e242]:
+                    - img
+                    - generic [ref=e243]: Actions
+              - row "Refinery Housing Estate 154635 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e244]:
+                - cell "Refinery Housing Estate 154635" [ref=e245]
+                - cell "Lagos, LAGOS" [ref=e246]
+                - cell "Dangote Refinery" [ref=e247]
+                - cell "PENDING" [ref=e248]:
+                  - generic [ref=e249]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e250]:
+                  - generic [ref=e251]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e252]:
+                  - button "Actions" [ref=e253]:
+                    - img
+                    - generic [ref=e254]: Actions
+              - row "Refinery Housing Estate 844742 Lagos, LAGOS Dangote Refinery PENDING IRREVOCABLE_POWER_OF_ATTORNEY Actions" [ref=e255]:
+                - cell "Refinery Housing Estate 844742" [ref=e256]
+                - cell "Lagos, LAGOS" [ref=e257]
+                - cell "Dangote Refinery" [ref=e258]
+                - cell "PENDING" [ref=e259]:
+                  - generic [ref=e260]: PENDING
+                - cell "IRREVOCABLE_POWER_OF_ATTORNEY" [ref=e261]:
+                  - generic [ref=e262]: IRREVOCABLE_POWER_OF_ATTORNEY
+                - cell "Actions" [ref=e263]:
+                  - button "Actions" [ref=e264]:
+                    - img
+                    - generic [ref=e265]: Actions
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e266]:
+        - button "Close toast" [ref=e267] [cursor=pointer]:
+          - img [ref=e268]
+        - img [ref=e272]
+        - generic [ref=e276]: Property created successfully
+  - button "Open Next.js Dev Tools" [ref=e282] [cursor=pointer]:
+    - img [ref=e283]
+  - alert [ref=e286]
+```

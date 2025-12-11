@@ -3,7 +3,8 @@
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth-helper';
 import { ClientSchema, type ClientInput } from '@/types/schema';
-import { encrypt } from '@/utils/encryption';
+import { VerificationStatus } from '@prisma/client';
+import { canCreateRecords, canApproveRecords } from '@/lib/permissions';
 
 export type ActionResult = {
   success: boolean;
@@ -43,10 +44,10 @@ export async function createClient(input: FormData | Partial<ClientInput>): Prom
     const currentUser = await getCurrentUser();
     console.log('[CREATE_CLIENT] Current user:', { id: currentUser.id, email: currentUser.email, role: currentUser.role });
 
-    // 🔒 RBAC: Only ADMIN and ASSOCIATE can create clients
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ASSOCIATE') {
+    // 🔒 RBAC: Only SUPER_ADMIN, MANAGER, and ASSOCIATE can create clients
+    if (!canCreateRecords(currentUser.role)) {
       console.error('[CREATE_CLIENT] ✗ Unauthorized: User role is', currentUser.role);
-      return { success: false, message: 'Unauthorized: Only ADMIN or ASSOCIATE can create clients' };
+      return { success: false, message: 'Unauthorized: Only SUPER_ADMIN, MANAGER, or ASSOCIATE can create clients' };
     }
 
     // 1. Normalize and validate input
@@ -66,12 +67,12 @@ export async function createClient(input: FormData | Partial<ClientInput>): Prom
     const data = parsed.data;
     console.log('[CREATE_CLIENT] ✓ Validation passed');
 
-    // 2. Encrypt NIN (if provided)
-    let ninToStore: string | null = null;
-    if (data.nin && data.nin.trim() !== '') {
-      ninToStore = encrypt(data.nin);
-      console.log('[CREATE_CLIENT] NIN encrypted');
-    }
+    // Determine Verification Status - auto-approve if user can approve records
+    const verificationStatus = canApproveRecords(currentUser.role) 
+      ? VerificationStatus.APPROVED 
+      : VerificationStatus.PENDING;
+
+
 
     // 3. Execute atomic transaction: Client + AuditLog
     console.log('[CREATE_CLIENT] Creating client in database...');
@@ -83,8 +84,12 @@ export async function createClient(input: FormData | Partial<ClientInput>): Prom
           email: data.email,
           phone: data.phone,
           address: data.address ?? null,
-          nin: ninToStore,
+          bankName: data.bankName ?? null,
+          accountNumber: data.accountNumber ?? null,
+          accountName: data.accountName ?? null,
           bvn: data.bvn && data.bvn.trim() !== '' ? data.bvn : null,
+          passportUrl: data.passportUrl ?? null,
+          verificationStatus,
         },
       });
 
@@ -100,6 +105,21 @@ export async function createClient(input: FormData | Partial<ClientInput>): Prom
           },
         },
       });
+
+      // If pending, specific audit log for Maker-Checker
+      if (verificationStatus === VerificationStatus.PENDING) {
+        await tx.auditLog.create({
+          data: {
+            action: 'RECORD_SUBMITTED_FOR_APPROVAL',
+            entityType: 'Client',
+            entityId: client.id,
+            performedBy: currentUser.id,
+            details: {
+              reason: 'Associate creation requires approval',
+            },
+          },
+        });
+      }
 
       return client;
     });
@@ -145,10 +165,10 @@ export async function updateClient(
     console.log('[UPDATE_CLIENT] Current user:', { id: currentUser.id, email: currentUser.email, role: currentUser.role });
     console.log('[UPDATE_CLIENT] Updating client:', clientId);
 
-    // 🔒 RBAC: Only ADMIN and ASSOCIATE can update clients
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ASSOCIATE') {
+    // 🔒 RBAC: Only SUPER_ADMIN, MANAGER, and ASSOCIATE can update clients
+    if (!canCreateRecords(currentUser.role)) {
       console.error('[UPDATE_CLIENT] ✗ Unauthorized: User role is', currentUser.role);
-      return { success: false, message: 'Unauthorized: Only ADMIN or ASSOCIATE can update clients' };
+      return { success: false, message: 'Unauthorized: Only SUPER_ADMIN, MANAGER, or ASSOCIATE can update clients' };
     }
 
     // 1. Normalize and validate input
@@ -181,12 +201,7 @@ export async function updateClient(
       };
     }
 
-    // 3. Encrypt NIN (if provided)
-    let ninToStore: string | null = null;
-    if (data.nin && data.nin.trim() !== '') {
-      ninToStore = encrypt(data.nin);
-      console.log('[UPDATE_CLIENT] NIN encrypted');
-    }
+
 
     // 4. Execute atomic transaction: Client update + AuditLog
     console.log('[UPDATE_CLIENT] Updating client in database...');
@@ -199,8 +214,11 @@ export async function updateClient(
           email: data.email,
           phone: data.phone,
           address: data.address ?? null,
-          nin: ninToStore,
+          bankName: data.bankName ?? null,
+          accountNumber: data.accountNumber ?? null,
+          accountName: data.accountName ?? null,
           bvn: data.bvn && data.bvn.trim() !== '' ? data.bvn : null,
+          passportUrl: data.passportUrl ?? null,
         },
       });
 

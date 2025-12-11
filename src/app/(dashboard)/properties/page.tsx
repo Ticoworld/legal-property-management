@@ -1,6 +1,9 @@
 import { getProperties } from "@/server/data/get-properties";
 import { getClient } from "@/server/data/get-client";
-import PropertiesTable, { type PropertyRow } from "@/components/properties/properties-table";
+import { getCurrentUser } from "@/lib/auth-helper";
+import PropertiesTable, {
+  type PropertyRow,
+} from "@/components/properties/properties-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -13,11 +16,12 @@ type PageProps = {
 };
 
 export default async function PropertiesPage({ searchParams }: PageProps) {
+  const currentUser = await getCurrentUser();
   const params = await searchParams;
   const ownerId = params.ownerId;
-  
+
   const data = await getProperties(ownerId);
-  
+
   // If filtering by owner, get owner name
   let ownerName: string | null = null;
   if (ownerId) {
@@ -32,8 +36,11 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     address: p.address,
     city: p.city,
     state: p.state,
-    titleType: p.titleType,
     ownerName: `${p.owner.firstName} ${p.owner.lastName}`,
+    verificationStatus: p.verificationStatus,
+    totalUnits: p.totalUnits,
+    occupiedUnits: p.occupiedUnits,
+    isOccupied: p.isOccupied,
   }));
 
   return (
@@ -57,7 +64,7 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <PropertiesTable rows={rows} />
+      <PropertiesTable rows={rows} userRole={currentUser.role} />
     </div>
   );
 }

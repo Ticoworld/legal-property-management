@@ -1,12 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { UserRole } from "@prisma/client";
 
 export type TeamMember = {
   id: string;
   name: string | null;
   email: string;
-  role: "ADMIN" | "ASSOCIATE" | "VIEWER";
+  role: UserRole;
   createdAt: Date;
 };
 

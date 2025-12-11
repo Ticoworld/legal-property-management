@@ -2,23 +2,47 @@
 
 import React from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { NoticeToQuitDocument } from "./notice-to-quit";
+import { NoticeToQuitPDFDocument } from "./notice-to-quit-pdf"; // Used updated PDF
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
+import type { FirmSettings } from "@/server/actions/settings";
 
 type PDFDownloadButtonProps = {
-  tenantName: string;
-  propertyAddress: string;
-  expiryDate: Date;
   className?: string;
   variant?: "default" | "outline" | "ghost";
   asMenuItem?: boolean;
+  tenancy: {
+    id?: string;
+    tenantName: string;
+    paymentFrequency: string;
+    expiryDate: Date | string;
+  };
+  property: {
+    address: string;
+    city: string;
+    state: string;
+  };
+  unit: {
+    name: string;
+    type: string;
+  } | null;
+  landlord: {
+    firstName: string;
+    lastName: string;
+  };
+  solicitor: {
+    name: string | null;
+  };
+  settings: FirmSettings;
 };
 
 export const PDFDownloadButton: React.FC<PDFDownloadButtonProps> = ({
-  tenantName,
-  propertyAddress,
-  expiryDate,
+  tenancy,
+  property,
+  unit,
+  landlord,
+  solicitor,
+  settings,
   className,
   variant = "outline",
   asMenuItem = false,
@@ -46,15 +70,27 @@ export const PDFDownloadButton: React.FC<PDFDownloadButtonProps> = ({
     );
   }
 
-  const fileName = `Notice_to_Quit_${tenantName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf`;
+  const fileName = `Notice_to_Quit_${tenancy.tenantName.replace(
+    /\s+/g,
+    "_"
+  )}_${new Date().getTime()}.pdf`;
+
+  // Parse expiryDate if string
+  const expiryDateObj =
+    typeof tenancy.expiryDate === "string"
+      ? new Date(tenancy.expiryDate)
+      : tenancy.expiryDate;
 
   return (
     <PDFDownloadLink
       document={
-        <NoticeToQuitDocument
-          tenantName={tenantName}
-          propertyAddress={propertyAddress}
-          expiryDate={expiryDate}
+        <NoticeToQuitPDFDocument
+          tenancy={{ ...tenancy, expiryDate: expiryDateObj }}
+          property={property}
+          unit={unit}
+          landlord={landlord}
+          solicitor={solicitor}
+          settings={settings}
         />
       }
       fileName={fileName}

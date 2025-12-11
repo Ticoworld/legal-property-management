@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth-helper';
 import { decrypt } from '@/utils/encryption';
 import { revalidatePath } from 'next/cache';
+import { canDeleteAssets, canExportData } from '@/lib/permissions';
 
 export type ActionResult = {
   success: boolean;
@@ -32,12 +33,12 @@ export async function exportClientData(clientId: string): Promise<ActionResult> 
     const currentUser = await getCurrentUser();
     console.log('[EXPORT_CLIENT_DATA] Requested by:', { id: currentUser.id, role: currentUser.role });
 
-    // 🔒 RBAC: Only ADMIN can export client data
-    if (currentUser.role !== 'ADMIN') {
+    // 🔒 RBAC: Only SUPER_ADMIN can export client data
+    if (!canExportData(currentUser.role)) {
       console.error('[EXPORT_CLIENT_DATA] ✗ Unauthorized: User role is', currentUser.role);
-      return { 
-        success: false, 
-        message: 'Unauthorized: Only ADMIN can export client data' 
+      return {
+        success: false,
+        message: 'Unauthorized: Only SUPER_ADMIN can export client data'
       };
     }
 
@@ -66,7 +67,6 @@ export async function exportClientData(clientId: string): Promise<ActionResult> 
     // 🔓 Decrypt PII for export (NDPR Right to Access requires readable format)
     const exportData = {
       ...client,
-      nin: client.nin ? decrypt(client.nin) : null,
       bvn: client.bvn ? decrypt(client.bvn) : null,
       exportedAt: new Date().toISOString(),
       exportedBy: {
@@ -95,10 +95,10 @@ export async function exportClientData(clientId: string): Promise<ActionResult> 
     console.log('[EXPORT_CLIENT_DATA] Properties:', client.properties.length);
     console.log('========== [EXPORT_CLIENT_DATA] END ==========\n');
 
-    return { 
-      success: true, 
-      message: 'Client data exported successfully', 
-      data: exportData 
+    return {
+      success: true,
+      message: 'Client data exported successfully',
+      data: exportData
     };
   } catch (error) {
     console.error('[EXPORT_CLIENT_DATA] ✗ Error:', error);
@@ -133,12 +133,12 @@ export async function deleteClient(clientId: string): Promise<ActionResult> {
     const currentUser = await getCurrentUser();
     console.log('[DELETE_CLIENT] Requested by:', { id: currentUser.id, role: currentUser.role });
 
-    // 🔒 RBAC: Only ADMIN can delete clients
-    if (currentUser.role !== 'ADMIN') {
+    // 🔒 RBAC: Only SUPER_ADMIN can delete clients
+    if (!canDeleteAssets(currentUser.role)) {
       console.error('[DELETE_CLIENT] ✗ Unauthorized: User role is', currentUser.role);
-      return { 
-        success: false, 
-        message: 'Unauthorized: Only ADMIN can delete clients' 
+      return {
+        success: false,
+        message: 'Unauthorized: Only SUPER_ADMIN can delete clients'
       };
     }
 
@@ -174,9 +174,8 @@ export async function deleteClient(clientId: string): Promise<ActionResult> {
 
       return {
         success: false,
-        message: `Cannot delete client with ${client.properties.length} ${
-          client.properties.length === 1 ? 'property' : 'properties'
-        }${activeTenancies > 0 ? ` and ${activeTenancies} active ${activeTenancies === 1 ? 'tenancy' : 'tenancies'}` : ''}. Please transfer ownership or archive properties first.`
+        message: `Cannot delete client with ${client.properties.length} ${client.properties.length === 1 ? 'property' : 'properties'
+          }${activeTenancies > 0 ? ` and ${activeTenancies} active ${activeTenancies === 1 ? 'tenancy' : 'tenancies'}` : ''}. Please transfer ownership or archive properties first.`
       };
     }
 
@@ -198,7 +197,7 @@ export async function deleteClient(clientId: string): Promise<ActionResult> {
               email: client.email,
               phone: client.phone,
               address: client.address,
-              hasNIN: !!client.nin,
+              hasBankDetails: !!(client.bankName || client.accountNumber),
               hasBVN: !!client.bvn,
               createdAt: client.createdAt,
               updatedAt: client.updatedAt
@@ -224,9 +223,9 @@ export async function deleteClient(clientId: string): Promise<ActionResult> {
     // Revalidate client list page
     revalidatePath('/clients');
 
-    return { 
-      success: true, 
-      message: 'Client deleted successfully. Audit log preserved for compliance.' 
+    return {
+      success: true,
+      message: 'Client deleted successfully. Audit log preserved for compliance.'
     };
   } catch (error) {
     console.error('[DELETE_CLIENT] ✗ Error:', error);
@@ -259,12 +258,12 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
     const currentUser = await getCurrentUser();
     console.log('[DELETE_PROPERTY] Requested by:', { id: currentUser.id, role: currentUser.role });
 
-    // 🔒 RBAC: Only ADMIN can delete properties
-    if (currentUser.role !== 'ADMIN') {
+    // 🔒 RBAC: Only SUPER_ADMIN can delete properties
+    if (!canDeleteAssets(currentUser.role)) {
       console.error('[DELETE_PROPERTY] ✗ Unauthorized: User role is', currentUser.role);
-      return { 
-        success: false, 
-        message: 'Unauthorized: Only ADMIN can delete properties' 
+      return {
+        success: false,
+        message: 'Unauthorized: Only SUPER_ADMIN can delete properties'
       };
     }
 
@@ -285,7 +284,7 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
 
     // 🛡️ Legal Safeguard: Block deletion if active tenancies exist
     const activeTenancies = property.tenancies.filter(t => t.status === 'ACTIVE' || t.status === 'RENEWED');
-    
+
     if (activeTenancies.length > 0) {
       console.error('[DELETE_PROPERTY] ✗ Property has active tenancies:', {
         propertyId,
@@ -294,9 +293,8 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
 
       return {
         success: false,
-        message: `Cannot delete property with ${activeTenancies.length} active ${
-          activeTenancies.length === 1 ? 'tenancy' : 'tenancies'
-        }. Please terminate or expire tenancies first.`
+        message: `Cannot delete property with ${activeTenancies.length} active ${activeTenancies.length === 1 ? 'tenancy' : 'tenancies'
+          }. Please terminate or expire tenancies first.`
       };
     }
 
@@ -309,9 +307,8 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
 
       return {
         success: false,
-        message: `Property has ${property.tenancies.length} historical ${
-          property.tenancies.length === 1 ? 'tenancy record' : 'tenancy records'
-        }. Due to legal record preservation requirements (onDelete: Restrict), please archive or transfer tenancies before deletion.`
+        message: `Property has ${property.tenancies.length} historical ${property.tenancies.length === 1 ? 'tenancy record' : 'tenancy records'
+          }. Due to legal record preservation requirements (onDelete: Restrict), please archive or transfer tenancies before deletion.`
       };
     }
 
@@ -333,7 +330,7 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
               state: property.state,
               titleType: property.titleType,
               registrationNumber: property.registrationNumber,
-              propertyType: property.propertyType,
+              structureType: property.structureType,
               owner: {
                 id: property.owner.id,
                 name: `${property.owner.firstName} ${property.owner.lastName}`,
@@ -373,9 +370,9 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
     // Revalidate property list page
     revalidatePath('/properties');
 
-    return { 
-      success: true, 
-      message: 'Property deleted successfully. Audit log preserved for compliance.' 
+    return {
+      success: true,
+      message: 'Property deleted successfully. Audit log preserved for compliance.'
     };
   } catch (error) {
     console.error('[DELETE_PROPERTY] ✗ Error:', error);

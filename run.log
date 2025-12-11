@@ -1,0 +1,58 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder
+[1A[2K[chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder
+[Login] Navigating to /login...
+
+[1A[2K[Login] Filling credentials for admin@legalapp.com...
+
+[1A[2K[Login] Submitting form...
+
+[1A[2K[Login] Navigation complete.
+
+[1A[2K  1) [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder › Act 1: The Founder (Create Team) 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeHidden[2m([22m[2m)[22m failed
+
+    Locator:  getByRole('dialog')
+    Expected: hidden
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeHidden" with timeout 5000ms[22m
+    [2m  - waiting for getByRole('dialog')[22m
+    [2m    7 × locator resolved to <div role="dialog" tabindex="-1" id="radix-_r_3_" data-state="open" data-slot="dialog-content" aria-labelledby="radix-_r_4_" aria-describedby="radix-_r_5_" class="bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duratio…>…</div>[22m
+    [2m      - unexpected value "visible"[22m
+    [2m    - locator resolved to <div role="dialog" tabindex="-1" id="radix-_r_3_" data-state="closed" data-slot="dialog-content" aria-labelledby="radix-_r_4_" aria-describedby="radix-_r_5_" class="bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg durat…>…</div>[22m
+    [2m    - unexpected value "visible"[22m
+
+
+      45 |       
+      46 |       // Wait for modal to close and row to appear
+    > 47 |       await expect(page.getByRole('dialog')).toBeHidden();
+         |                                              ^
+      48 |       await expect(page.locator(`text=${managerName}`)).toBeVisible();
+      49 |       
+      50 |       // Create Associate
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\master-workflow.spec.ts:47:46
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\master-workflow.spec.ts:25:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder 

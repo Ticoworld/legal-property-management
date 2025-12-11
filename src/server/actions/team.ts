@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth-helper";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { canManageTeam, canModifyUser, getAllowedRolesToCreate } from "@/lib/permissions";
+import { UserRole } from "@prisma/client";
 
 const CreateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -12,7 +14,7 @@ const CreateUserSchema = z.object({
   password: z
     .string()
     .min(8, "Password must be at least 8 characters"),
-  role: z.enum(["ADMIN", "ASSOCIATE", "VIEWER"]),
+  role: z.enum(["SUPER_ADMIN", "MANAGER", "ASSOCIATE", "VIEWER"]),
 });
 
 function normalize(input: FormData | Record<string, unknown>): Record<string, unknown> {
@@ -35,8 +37,8 @@ export type ActionResult = {
 export async function createUser(input: FormData | Record<string, unknown>): Promise<ActionResult> {
   try {
     const current = await getCurrentUser();
-    if (current.role !== "ADMIN") {
-      throw new Error("Unauthorized");
+    if (!canManageTeam(current.role)) {
+      throw new Error("Unauthorized: Only SUPER_ADMIN or MANAGER can manage team");
     }
 
     const parsed = CreateUserSchema.safeParse(normalize(input));
@@ -45,6 +47,12 @@ export async function createUser(input: FormData | Record<string, unknown>): Pro
     }
 
     const { name, email, password, role } = parsed.data;
+
+    // 🔒 Role Hierarchy: MANAGER cannot create SUPER_ADMIN users
+    const allowedRoles = getAllowedRolesToCreate(current.role);
+    if (!allowedRoles.includes(role as UserRole)) {
+      return { success: false, message: `Unauthorized: You cannot create users with role ${role}` };
+    }
 
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) {
@@ -55,7 +63,7 @@ export async function createUser(input: FormData | Record<string, unknown>): Pro
 
     await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
-        data: { name, email, password: hashed, role },
+        data: { name, email, password: hashed, role, mustChangePassword: true },
         select: { id: true, email: true, role: true, name: true },
       });
 
@@ -82,13 +90,18 @@ export async function createUser(input: FormData | Record<string, unknown>): Pro
 export async function deleteUser(userId: string): Promise<ActionResult> {
   try {
     const current = await getCurrentUser();
-    if (current.role !== "ADMIN") {
-      throw new Error("Unauthorized");
+    if (!canManageTeam(current.role)) {
+      throw new Error("Unauthorized: Only SUPER_ADMIN or MANAGER can manage team");
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return { success: false, message: "User not found" };
+    }
+
+    // 🔒 Role Hierarchy: MANAGER cannot delete SUPER_ADMIN users
+    if (!canModifyUser(current.role, user.role)) {
+      return { success: false, message: `Unauthorized: You cannot delete users with role ${user.role}` };
     }
 
     await prisma.$transaction(async (tx) => {
@@ -115,4 +128,71 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
 export async function deleteUserAction(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("userId") || "");
   return deleteUser(id);
+}
+
+/**
+ * resetUserPassword
+ * 
+ * Allows ADMIN to reset a staff member's password.
+ * Security: Cannot reset own password (prevents accidental lockout).
+ * Audit: Logs PASSWORD_RESET_BY_ADMIN.
+ */
+export async function resetUserPassword(
+  userId: string,
+  newPassword: string
+): Promise<ActionResult> {
+  try {
+    const current = await getCurrentUser();
+    
+    // RBAC: Only SUPER_ADMIN and MANAGER can reset passwords
+    if (!canManageTeam(current.role)) {
+      return { success: false, message: "Unauthorized: Only SUPER_ADMIN or MANAGER can reset passwords" };
+    }
+
+    // Security: Prevent admin from resetting their own password via this flow
+    if (current.id === userId) {
+      return { success: false, message: "Cannot reset your own password. Use profile settings instead." };
+    }
+
+    // Validate password
+    if (!newPassword || newPassword.length < 8) {
+      return { success: false, message: "Password must be at least 8 characters" };
+    }
+
+    // Find the user
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Update with audit log
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: hashed, mustChangePassword: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: "PASSWORD_RESET_BY_ADMIN",
+          entityType: "User",
+          entityId: userId,
+          performedBy: current.id,
+          details: { 
+            targetEmail: user.email, 
+            targetRole: user.role,
+            resetBy: current.email,
+          },
+        },
+      });
+    });
+
+    revalidatePath("/settings");
+    return { success: true, message: "Password has been reset successfully" };
+  } catch (e) {
+    return { success: false, message: e instanceof Error ? e.message : "Failed to reset password" };
+  }
 }

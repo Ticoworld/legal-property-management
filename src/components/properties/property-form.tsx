@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { PropertySchema, type PropertyInput } from "@/types/schema";
 import { createProperty, updateProperty } from "@/server/actions/property";
 import { getClientsForSelect } from "@/server/data/get-properties";
+import { getFirmSettings, type FirmSettings } from "@/server/actions/settings";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -50,7 +51,12 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NigerianState, TitleType, PropertyType } from "@prisma/client";
+import type {
+  NigerianState,
+  TitleType,
+  PropertyStructureType,
+} from "@prisma/client";
+import { UnitGenerator } from "./unit-generator";
 
 type PropertyData = {
   id: string;
@@ -61,7 +67,7 @@ type PropertyData = {
   registrationNumber: string;
   surveyNumber: string | null;
   plotNumber: string | null;
-  propertyType: PropertyType;
+  structureType: PropertyStructureType;
   ownerId: string;
 };
 
@@ -77,6 +83,7 @@ type ClientOption = {
   firstName: string;
   lastName: string;
   label: string;
+  status: string;
 };
 
 type UploadedDocument = {
@@ -86,38 +93,73 @@ type UploadedDocument = {
 };
 
 const NIGERIAN_STATES = [
-  "ABIA", "ADAMAWA", "AKWA_IBOM", "ANAMBRA", "BAUCHI", "BAYELSA",
-  "BENUE", "BORNO", "CROSS_RIVER", "DELTA", "EBONYI", "EDO",
-  "EKITI", "ENUGU", "FCT", "GOMBE", "IMO", "JIGAWA", "KADUNA",
-  "KANO", "KATSINA", "KEBBI", "KOGI", "KWARA", "LAGOS",
-  "NASARAWA", "NIGER", "OGUN", "ONDO", "OSUN", "OYO",
-  "PLATEAU", "RIVERS", "SOKOTO", "TARABA", "YOBE", "ZAMFARA"
+  "ABIA",
+  "ADAMAWA",
+  "AKWA_IBOM",
+  "ANAMBRA",
+  "BAUCHI",
+  "BAYELSA",
+  "BENUE",
+  "BORNO",
+  "CROSS_RIVER",
+  "DELTA",
+  "EBONYI",
+  "EDO",
+  "EKITI",
+  "ENUGU",
+  "FCT",
+  "GOMBE",
+  "IMO",
+  "JIGAWA",
+  "KADUNA",
+  "KANO",
+  "KATSINA",
+  "KEBBI",
+  "KOGI",
+  "KWARA",
+  "LAGOS",
+  "NASARAWA",
+  "NIGER",
+  "OGUN",
+  "ONDO",
+  "OSUN",
+  "OYO",
+  "PLATEAU",
+  "RIVERS",
+  "SOKOTO",
+  "TARABA",
+  "YOBE",
+  "ZAMFARA",
 ] as const;
 
 const TITLE_TYPES = [
-  { value: "CERTIFICATE_OF_OCCUPANCY", label: "Certificate of Occupancy (C of O)" },
-  { value: "DEED_OF_ASSIGNMENT", label: "Deed of Assignment" },
-  { value: "DEED_OF_CONVEYANCE", label: "Deed of Conveyance" },
-  { value: "GOVERNORS_CONSENT", label: "Governor's Consent" },
-  { value: "REGISTERED_CONVEYANCE", label: "Registered Conveyance" },
-  { value: "POWER_OF_ATTORNEY", label: "Power of Attorney" },
+  {
+    value: "IRREVOCABLE_POWER_OF_ATTORNEY",
+    label: "Irrevocable Power of Attorney",
+  },
   { value: "OTHER", label: "Other" },
 ] as const;
 
-const PROPERTY_TYPES = [
-  { value: "RESIDENTIAL", label: "Residential" },
-  { value: "COMMERCIAL", label: "Commercial" },
-  { value: "INDUSTRIAL", label: "Industrial" },
-  { value: "MIXED_USE", label: "Mixed Use" },
-  { value: "LAND", label: "Land" },
+const STRUCTURE_TYPES = [
+  { value: "SINGLE_UNIT", label: "Single Unit (House/Bungalow/Duplex)" },
+  { value: "BLOCK_OF_FLATS", label: "Block of Flats" },
+  { value: "SHOPPING_COMPLEX", label: "Shopping Complex" },
+  { value: "ESTATE", label: "Estate" },
+  { value: "LAND", label: "Land (Undeveloped)" },
 ] as const;
 
-export default function PropertyForm({ property, onCreated, onUpdated, trigger }: Props) {
+export default function PropertyForm({
+  property,
+  onCreated,
+  onUpdated,
+  trigger,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [ownerOpen, setOwnerOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedDocument[]>([]);
+  const [firmSettings, setFirmSettings] = useState<FirmSettings | null>(null);
   const isEditMode = !!property;
 
   const form = useForm<PropertyInput>({
@@ -126,11 +168,12 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
       address: "",
       city: "",
       state: "LAGOS",
-      titleType: "CERTIFICATE_OF_OCCUPANCY",
+      titleType: "IRREVOCABLE_POWER_OF_ATTORNEY",
       registrationNumber: "",
       surveyNumber: "",
       plotNumber: "",
-      propertyType: "RESIDENTIAL",
+      structureType: "SINGLE_UNIT",
+      units: [],
       ownerId: "",
     },
     mode: "onBlur",
@@ -138,22 +181,43 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
 
   useEffect(() => {
     if (open) {
-      getClientsForSelect().then(setClients);
-      
-      // Reset form with property data when in edit mode
-      if (isEditMode) {
-        form.reset({
-          address: property.address,
-          city: property.city,
-          state: property.state,
-          titleType: property.titleType,
-          registrationNumber: property.registrationNumber,
-          surveyNumber: property.surveyNumber || "",
-          plotNumber: property.plotNumber || "",
-          propertyType: property.propertyType,
-          ownerId: property.ownerId,
-        });
-      }
+      Promise.all([getClientsForSelect(), getFirmSettings()]).then(
+        ([clientsData, settingsData]) => {
+          setClients(clientsData);
+          setFirmSettings(settingsData);
+
+          // Reset form with property data when in edit mode
+          if (isEditMode) {
+            form.reset({
+              address: property.address,
+              city: property.city,
+              state: property.state,
+              titleType: property.titleType,
+              registrationNumber: property.registrationNumber,
+              surveyNumber: property.surveyNumber || "",
+              plotNumber: property.plotNumber || "",
+              structureType: property.structureType,
+              units: [],
+              ownerId: property.ownerId,
+            });
+          } else {
+            // When creating new property, use firm settings for defaults
+            form.reset({
+              address: "",
+              city: settingsData.city || "",
+              state: (settingsData.state?.toUpperCase() ||
+                "EBONYI") as (typeof NIGERIAN_STATES)[number],
+              titleType: "IRREVOCABLE_POWER_OF_ATTORNEY",
+              registrationNumber: "",
+              surveyNumber: "",
+              plotNumber: "",
+              structureType: "SINGLE_UNIT",
+              units: [],
+              ownerId: "",
+            });
+          }
+        }
+      );
     }
   }, [open, isEditMode, property, form]);
 
@@ -172,9 +236,13 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
       const res = isEditMode
         ? await updateProperty(property.id, values, uploadedFiles)
         : await createProperty(values, uploadedFiles);
-        
+
       if (res.success) {
-        toast.success(isEditMode ? "Property updated successfully" : "Property created successfully");
+        toast.success(
+          isEditMode
+            ? "Property updated successfully"
+            : "Property created successfully"
+        );
         form.reset();
         setUploadedFiles([]);
         setOpen(false);
@@ -184,7 +252,10 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
           onCreated?.();
         }
       } else {
-        const msg = typeof res.message === "string" ? res.message : `Failed to ${isEditMode ? 'update' : 'create'} property`;
+        const msg =
+          typeof res.message === "string"
+            ? res.message
+            : `Failed to ${isEditMode ? "update" : "create"} property`;
         toast.error(msg);
       }
     } catch {
@@ -195,7 +266,11 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
   }
 
   const defaultTrigger = (
-    <Button className="ml-auto" size="sm" variant={isEditMode ? "outline" : "default"}>
+    <Button
+      className="ml-auto"
+      size="sm"
+      variant={isEditMode ? "outline" : "default"}
+    >
       {isEditMode ? "Edit Property" : "Add Property"}
     </Button>
   );
@@ -205,17 +280,27 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger ?? defaultTrigger}</SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-md p-6 overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{isEditMode ? "Edit Property" : "Add Property"}</SheetTitle>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md flex flex-col p-0"
+      >
+        <SheetHeader className="px-6 pt-6">
+          <SheetTitle>
+            {isEditMode ? "Edit Property" : "Add Property"}
+          </SheetTitle>
           <SheetDescription>
-            {isEditMode ? "Update property details. Select the owner from existing clients." : "Enter property details. Select the owner from existing clients."}
+            {isEditMode
+              ? "Update property details. Select the owner from existing clients."
+              : "Enter property details. Select the owner from existing clients."}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-8">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 min-h-0"
+          >
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               {/* Owner Combobox */}
               <FormField
                 control={form.control}
@@ -299,7 +384,10 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input placeholder="Lagos" {...field} />
+                        <Input
+                          placeholder={firmSettings?.city || "e.g., Abakaliki"}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -312,7 +400,10 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>State</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select state" />
@@ -338,7 +429,10 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Title Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select title type" />
@@ -371,20 +465,24 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                 )}
               />
 
+              {/* Structure Type - New Field */}
               <FormField
                 control={form.control}
-                name="propertyType"
+                name="structureType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Property Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Structure Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select property type" />
+                          <SelectValue placeholder="Select structure type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {PROPERTY_TYPES.map((type) => (
+                        {STRUCTURE_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
                           </SelectItem>
@@ -396,6 +494,31 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                 )}
               />
 
+              {/* Unit Generator - Conditional on Structure Type */}
+              {[
+                "BLOCK_OF_FLATS",
+                "SHOPPING_COMPLEX",
+                "ESTATE",
+                "LAND",
+              ].includes(form.watch("structureType")) && (
+                <FormField
+                  control={form.control}
+                  name="units"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <UnitGenerator
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          structureType={form.watch("structureType")}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               {/* Document Upload Section */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Title Documents</label>
@@ -405,20 +528,26 @@ export default function PropertyForm({ property, onCreated, onUpdated, trigger }
                   uploadedFiles={uploadedFiles}
                 />
               </div>
+            </div>
 
-              <SheetFooter className="pt-6">
-                <SheetClose asChild>
-                  <Button type="button" variant="outline" disabled={submitting}>
-                    Cancel
-                  </Button>
-                </SheetClose>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? (isEditMode ? "Updating..." : "Saving...") : (isEditMode ? "Update Property" : "Save Property")}
+            <SheetFooter className="px-6 py-4 border-t">
+              <SheetClose asChild>
+                <Button type="button" variant="outline" disabled={submitting}>
+                  Cancel
                 </Button>
-              </SheetFooter>
-            </form>
-          </Form>
-        </div>
+              </SheetClose>
+              <Button type="submit" disabled={submitting}>
+                {submitting
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Saving..."
+                  : isEditMode
+                  ? "Update Property"
+                  : "Save Property"}
+              </Button>
+            </SheetFooter>
+          </form>
+        </Form>
       </SheetContent>
     </Sheet>
   );

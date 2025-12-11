@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export type WatchRow = {
@@ -18,6 +19,7 @@ export type WatchRow = {
   tenantName: string;
   expiryDate: string; // ISO string
   propertyAddress: string;
+  tenantPassportUrl: string | null;
 };
 
 function statusFor(expiry: Date) {
@@ -28,7 +30,11 @@ function statusFor(expiry: Date) {
   return { label: "Active", color: "default" as const };
 }
 
-export default function ExpiringTable({ initialRows }: { initialRows: WatchRow[] }) {
+export default function ExpiringTable({
+  initialRows,
+}: {
+  initialRows: WatchRow[];
+}) {
   const [asc, setAsc] = useState(true);
 
   const sorted = useMemo(() => {
@@ -52,7 +58,8 @@ export default function ExpiringTable({ initialRows }: { initialRows: WatchRow[]
                 onClick={() => setAsc((v) => !v)}
                 className="inline-flex items-center gap-1 text-foreground hover:text-primary"
               >
-                Expiry Date {asc ? (
+                Expiry Date{" "}
+                {asc ? (
                   <ArrowUpNarrowWide className="h-4 w-4" />
                 ) : (
                   <ArrowDownWideNarrow className="h-4 w-4" />
@@ -65,7 +72,10 @@ export default function ExpiringTable({ initialRows }: { initialRows: WatchRow[]
         <TableBody>
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground">
+              <TableCell
+                colSpan={4}
+                className="text-center text-muted-foreground"
+              >
                 No upcoming expiries.
               </TableCell>
             </TableRow>
@@ -76,7 +86,18 @@ export default function ExpiringTable({ initialRows }: { initialRows: WatchRow[]
             return (
               <TableRow key={r.id}>
                 <TableCell className="pr-6">{r.propertyAddress}</TableCell>
-                <TableCell className="pr-6">{r.tenantName}</TableCell>
+                <TableCell className="pr-6">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={r.tenantPassportUrl || ""}
+                        alt={r.tenantName}
+                      />
+                      <AvatarFallback>{r.tenantName[0]}</AvatarFallback>
+                    </Avatar>
+                    <span>{r.tenantName}</span>
+                  </div>
+                </TableCell>
                 <TableCell className="font-mono pr-6">
                   {d.toLocaleDateString(undefined, {
                     year: "numeric",
@@ -88,9 +109,12 @@ export default function ExpiringTable({ initialRows }: { initialRows: WatchRow[]
                   <Badge
                     variant={s.color}
                     className={cn(
-                      s.label === "Active" && "bg-green-600 text-white border-transparent",
-                      s.label === "Expiring" && "bg-yellow-500 text-white border-transparent",
-                      s.label === "Expired" && "bg-red-600 text-white border-transparent"
+                      s.label === "Active" &&
+                        "bg-green-600 text-white border-transparent",
+                      s.label === "Expiring" &&
+                        "bg-yellow-500 text-white border-transparent",
+                      s.label === "Expired" &&
+                        "bg-red-600 text-white border-transparent"
                     )}
                   >
                     {s.label}

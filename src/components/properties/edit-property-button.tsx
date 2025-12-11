@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import PropertyForm from "@/components/properties/property-form";
-import type { NigerianState, TitleType, PropertyType } from "@prisma/client";
+import type {
+  NigerianState,
+  TitleType,
+  PropertyStructureType,
+} from "@prisma/client";
 
 type PropertyData = {
   id: string;
@@ -13,7 +17,7 @@ type PropertyData = {
   registrationNumber: string;
   surveyNumber: string | null;
   plotNumber: string | null;
-  propertyType: PropertyType;
+  structureType: PropertyStructureType;
   ownerId: string;
 };
 

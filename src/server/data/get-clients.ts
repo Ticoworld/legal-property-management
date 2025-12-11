@@ -2,17 +2,19 @@
 
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/utils/encryption';
+import { getCurrentUser } from '@/lib/auth-helper';
+import { canManageTeam } from '@/lib/permissions';
 
 /**
  * getClients
  *
- * Read-only operation that returns all clients.
- * - Decrypts NIN before returning to the caller so the lawyer
- *   can read it in the UI.
- * - BVN is left as-is; you can decrypt similarly if required.
+ * Read-only operation that returns all clients with their bank details.
  * - Includes property count for each client.
+ * - 🔒 PII MASKING: Only SUPER_ADMIN and MANAGER can see full banking details
  */
 export async function getClients() {
+  const currentUser = await getCurrentUser();
+  
   const clients = await prisma.client.findMany({
     orderBy: {
       createdAt: 'desc',
@@ -27,22 +29,17 @@ export async function getClients() {
   });
 
   return clients.map((client) => {
-    let nin: string | null = null;
-
-    if (client.nin) {
-      try {
-        nin = decrypt(client.nin);
-      } catch {
-        // If decryption fails, we avoid breaking the UI.
-        // You may choose to log this via AuditLog or monitoring.
-        nin = null;
-      }
-    }
-
+    // 🛡️ PII MASKING - SUPER_ADMIN and MANAGER can see banking details
+    const showPII = canManageTeam(currentUser.role);
+    
     return {
       ...client,
-      nin,
+      bankName: showPII ? client.bankName : (client.bankName ? '***MASKED***' : null),
+      accountNumber: showPII ? client.accountNumber : (client.accountNumber ? '***MASKED***' : null),
+      accountName: showPII ? client.accountName : (client.accountName ? '***MASKED***' : null),
+      bvn: showPII ? (client.bvn ? decrypt(client.bvn) : null) : (client.bvn ? '***MASKED***' : null),
       propertyCount: client._count.properties,
+      verificationStatus: client.verificationStatus,
     };
   });
 }

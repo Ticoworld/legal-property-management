@@ -85,6 +85,7 @@ const credentials = Credentials({
         email: user.email,
         role: user.role,
         name: user.name,
+        mustChangePassword: user.mustChangePassword,
       };
     } catch (err) {
       console.error('[AUTH.AUTHORIZE] ❌ Exception caught:', err);
@@ -103,21 +104,28 @@ const nextAuth = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user }) {
-      const isRole = (r: unknown): r is 'ADMIN' | 'ASSOCIATE' | 'VIEWER' =>
-        r === 'ADMIN' || r === 'ASSOCIATE' || r === 'VIEWER';
-      if (user && 'role' in user && isRole((user as { role?: 'ADMIN'|'ASSOCIATE'|'VIEWER' }).role)) {
-        token.role = (user as { role?: 'ADMIN'|'ASSOCIATE'|'VIEWER' }).role;
+      // Valid roles including new hierarchy
+      const validRoles = ['SUPER_ADMIN', 'MANAGER', 'ASSOCIATE', 'VIEWER'];
+      const isRole = (r: unknown): r is string => validRoles.includes(r as string);
+      if (user && 'role' in user && isRole((user as { role?: string }).role)) {
+        token.role = (user as { role?: string }).role;
+      }
+      if (user && 'mustChangePassword' in user) {
+        token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword;
       }
       return token;
     },
     async session({ session, token }) {
-      const isRole = (r: unknown): r is 'ADMIN' | 'ASSOCIATE' | 'VIEWER' =>
-        r === 'ADMIN' || r === 'ASSOCIATE' || r === 'VIEWER';
+      const validRoles = ['SUPER_ADMIN', 'MANAGER', 'ASSOCIATE', 'VIEWER'];
+      const isRole = (r: unknown): r is string => validRoles.includes(r as string);
       if (token?.sub) {
         session.user.id = token.sub;
       }
       if (isRole(token.role)) {
-        session.user.role = token.role;
+        session.user.role = token.role as typeof session.user.role;
+      }
+      if (typeof token.mustChangePassword === 'boolean') {
+        session.user.mustChangePassword = token.mustChangePassword;
       }
       return session;
     },

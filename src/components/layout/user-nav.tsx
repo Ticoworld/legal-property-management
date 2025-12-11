@@ -24,17 +24,19 @@ type UserNavProps = {
 
 function getInitials(name?: string | null): string {
   if (!name) return "U";
-  
+
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) {
     return parts[0].substring(0, 2).toUpperCase();
   }
-  
+
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function getRoleBadgeVariant(role?: string | null): "default" | "secondary" | "destructive" | "outline" {
-  if (role === "ADMIN") return "default";
+function getRoleBadgeVariant(
+  role?: string | null
+): "default" | "secondary" | "destructive" | "outline" {
+  if (role === "SUPER_ADMIN" || role === "MANAGER") return "default";
   if (role === "ASSOCIATE") return "secondary";
   return "outline";
 }
@@ -50,7 +52,7 @@ export function UserNav({ user }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button 
+        <button
           className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full"
           suppressHydrationWarning
         >
@@ -66,9 +68,14 @@ export function UserNav({ user }: UserNavProps) {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
+              <p className="text-sm font-medium leading-none">
+                {user.name || "User"}
+              </p>
               {user.role && (
-                <Badge variant={roleBadgeVariant} className="text-xs px-1.5 py-0">
+                <Badge
+                  variant={roleBadgeVariant}
+                  className="text-xs px-1.5 py-0"
+                >
                   {user.role}
                 </Badge>
               )}

@@ -1,0 +1,60 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder
+[1A[2K[chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder
+[Login] Navigating to /login...
+
+[1A[2K[Login] Filling credentials for admin@legalapp.com...
+
+[1A[2K[Login] Submitting form...
+
+[1A[2K[Login] Navigation complete.
+
+[1A[2K✅ Act 1: Founder created users and logged out
+
+[1A[2K[Login] Navigating to /login...
+
+[1A[2K[Login] Filling credentials for clerk692112+1765018692112@legalapp.com...
+
+[1A[2K[Login] Submitting form...
+
+[1A[2K[Login] Navigation complete.
+
+[1A[2K  1) [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder › Act 2: The Clerk (Create Assets) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('option', { name: '3 Bedroom' }).or(getByRole('option').first()) resolved to 2 elements:
+        1) <div role="option" tabindex="-1" data-highlighted="" aria-selected="false" data-state="unchecked" data-slot="select-item" data-radix-collection-item="" aria-labelledby="radix-_r_2m_" class="focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]…>…</div> aka getByRole('option', { name: 'Room & Parlour' })
+        2) <div role="option" tabindex="-1" aria-selected="false" data-state="unchecked" data-slot="select-item" data-radix-collection-item="" aria-labelledby="radix-_r_2q_" class="focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not…>…</div> aka getByRole('option', { name: '3 Bedroom' })
+
+    Call log:
+    [2m  - waiting for getByRole('option', { name: '3 Bedroom' }).or(getByRole('option').first())[22m
+
+
+      121 |       await page.waitForTimeout(500);
+      122 |       await page.locator('button:has-text("Select type")').first().click();
+    > 123 |       await page.getByRole('option', { name: '3 Bedroom' }).or(page.getByRole('option').first()).click(); // Just pick first available if 3 bed not there
+          |                                                                                                  ^
+      124 |       await page.locator('input[type="number"]').first().fill('4');
+      125 |       
+      126 |       await page.getByRole('button', { name: 'Save Property' }).click();
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\master-workflow.spec.ts:123:98
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\master-workflow.spec.ts:76:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\master-workflow-The-Full-F-33d8b---Manager---Clerk---Founder-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › tests\master-workflow.spec.ts:18:7 › The Full Firm Lifecycle (Master E2E) › Master Workflow: Founder -> Clerk -> Manager -> Clerk -> Founder 

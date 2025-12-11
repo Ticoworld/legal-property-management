@@ -15,11 +15,7 @@ import { z } from 'zod';
 // NIGERIAN-SPECIFIC VALIDATION PATTERNS
 // ============================================
 
-/**
- * Nigerian National Identification Number (NIN) - 11 digits
- * Format: XXXXXXXXXXX (11 numeric digits)
- */
-const ninPattern = /^\d{11}$/;
+
 
 /**
  * Nigerian Bank Verification Number (BVN) - 11 digits
@@ -50,7 +46,7 @@ export const UserSchema = z.object({
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
-  role: z.enum(['ADMIN', 'ASSOCIATE', 'VIEWER']).default('VIEWER'),
+  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'ASSOCIATE', 'VIEWER']).default('VIEWER'),
 });
 
 export type UserInput = z.infer<typeof UserSchema>;
@@ -86,14 +82,26 @@ export const ClientSchema = z.object({
     .min(10, 'Address must be at least 10 characters')
     .max(200, 'Address must not exceed 200 characters')
     .optional(),
-  nin: z.string()
-    .regex(ninPattern, 'NIN must be exactly 11 digits')
+  bankName: z.string()
+    .max(100, 'Bank name must not exceed 100 characters')
     .optional()
-    .or(z.literal('')), // Allow empty string for optional field
+    .or(z.literal('')),
+  accountNumber: z.string()
+    .regex(/^\d{10}$/, 'Account number must be exactly 10 digits')
+    .optional()
+    .or(z.literal('')),
+  accountName: z.string()
+    .max(100, 'Account name must not exceed 100 characters')
+    .optional()
+    .or(z.literal('')),
   bvn: z.string()
     .regex(bvnPattern, 'BVN must be exactly 11 digits')
     .optional()
     .or(z.literal('')), // Allow empty string for optional field
+  passportUrl: z.string().optional(),
+  // Personal details for legal documents
+  title: z.string().max(20, 'Title must not exceed 20 characters').optional().or(z.literal('')),
+  gender: z.enum(['MALE', 'FEMALE', 'CORPORATE']).default('MALE'),
 });
 
 export type ClientInput = z.infer<typeof ClientSchema>;
@@ -106,6 +114,44 @@ export type UpdateClientInput = z.infer<typeof UpdateClientSchema>;
 // ============================================
 // PROPERTY SCHEMA (Legal Assets)
 // ============================================
+
+// Property Unit Configuration for multi-unit properties
+export const PropertyUnitConfigSchema = z.object({
+  type: z.enum([
+    'ROOM_PARLOUR',
+    'SELF_CONTAIN',
+    'ONE_BEDROOM',
+    'TWO_BEDROOM',
+    'THREE_BEDROOM',
+    'FOUR_BEDROOM',
+    'DUPLEX',
+    'SHOP',
+    'WAREHOUSE',
+    'PLOT_OF_LAND',
+    'OFFICE'
+  ], { message: 'Please select a valid unit type' }),
+  quantity: z.number()
+    .int('Quantity must be a whole number')
+    .positive('Quantity must be at least 1')
+    .max(100, 'Quantity cannot exceed 100 units'),
+  marketRent: z.number()
+    .positive('Market rent must be a positive number')
+    .max(1000000000, 'Market rent seems unreasonably high')
+    .multipleOf(0.01, 'Market rent must have at most 2 decimal places')
+    .optional(),
+  bedrooms: z.number()
+    .int('Bedrooms must be a whole number')
+    .min(0, 'Bedrooms cannot be negative')
+    .max(10, 'Bedrooms seems unreasonably high')
+    .optional(),
+  bathrooms: z.number()
+    .int('Bathrooms must be a whole number')
+    .min(0, 'Bathrooms cannot be negative')
+    .max(10, 'Bathrooms seems unreasonably high')
+    .optional(),
+});
+
+export type PropertyUnitConfig = z.infer<typeof PropertyUnitConfigSchema>;
 
 export const PropertySchema = z.object({
   id: z.string().cuid().optional(),
@@ -124,12 +170,7 @@ export const PropertySchema = z.object({
     'PLATEAU', 'RIVERS', 'SOKOTO', 'TARABA', 'YOBE', 'ZAMFARA'
   ], { message: 'Please select a valid Nigerian state' }),
   titleType: z.enum([
-    'CERTIFICATE_OF_OCCUPANCY',
-    'DEED_OF_ASSIGNMENT',
-    'DEED_OF_CONVEYANCE',
-    'GOVERNORS_CONSENT',
-    'REGISTERED_CONVEYANCE',
-    'POWER_OF_ATTORNEY',
+    'IRREVOCABLE_POWER_OF_ATTORNEY',
     'OTHER'
   ], { message: 'Please select a valid title type' }),
   registrationNumber: z.string()
@@ -152,15 +193,30 @@ export const PropertySchema = z.object({
     .positive('Building area must be a positive number')
     .max(100000, 'Building area seems unreasonably large')
     .optional(),
-  propertyType: z.enum([
-    'RESIDENTIAL',
-    'COMMERCIAL',
-    'INDUSTRIAL',
-    'MIXED_USE',
+
+  structureType: z.enum([
+    'SINGLE_UNIT',
+    'BLOCK_OF_FLATS',
+    'SHOPPING_COMPLEX',
+    'ESTATE',
     'LAND'
-  ], { message: 'Please select a valid property type' }),
+  ], { message: 'Please select a valid structure type' }),
+  units: z.array(PropertyUnitConfigSchema).optional(), // For multi-unit properties
   ownerId: z.string().cuid('Invalid client ID'),
-});
+}).refine(
+  (data) => {
+    // If multi-unit structure, units array must be provided
+    const multiUnitTypes = ['BLOCK_OF_FLATS', 'SHOPPING_COMPLEX', 'ESTATE'];
+    if (multiUnitTypes.includes(data.structureType) && (!data.units || data.units.length === 0)) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Multi-unit properties must have at least one unit configuration',
+    path: ['units'],
+  }
+);
 
 export type PropertyInput = z.infer<typeof PropertySchema>;
 
@@ -185,6 +241,7 @@ export const TenancySchema = z.object({
     .or(z.literal('')),
   tenantPhone: z.string()
     .regex(phonePattern, 'Invalid Nigerian phone number. Format: 08012345678 or +2348012345678'),
+  tenantPassportUrl: z.string().optional(),
   startDate: z.coerce.date({
     message: 'Start date is required and must be a valid date',
   }),
@@ -202,16 +259,31 @@ export const TenancySchema = z.object({
     'TERMINATED',
     'RENEWED'
   ]).default('ACTIVE'),
-  paymentFrequency: z.string()
-    .max(50, 'Payment frequency must not exceed 50 characters')
-    .optional()
-    .or(z.literal('')),
+  paymentFrequency: z.enum([
+    'ANNUALLY',
+    'BI_ANNUALLY',
+    'QUARTERLY',
+    'MONTHLY'
+  ]).default('ANNUALLY'),
   securityDeposit: z.number()
     .positive('Security deposit must be a positive number')
     .max(1000000000, 'Security deposit seems unreasonably high')
     .multipleOf(0.01, 'Security deposit must have at most 2 decimal places')
     .optional(),
   propertyId: z.string().cuid('Invalid property ID'),
+  unitId: z.string().cuid('Invalid unit ID').optional().or(z.literal('')), // Optional: For multi-unit properties
+  // Guarantor Details (Optional)
+  guarantorName: z.string().optional().or(z.literal('')),
+  guarantorPhone: z.string().optional().or(z.literal('')),
+  guarantorEmail: z.string().email('Invalid email').optional().or(z.literal('')),
+  guarantorAddress: z.string().optional().or(z.literal('')),
+  // Next of Kin (Optional)
+  nextOfKinName: z.string().optional().or(z.literal('')),
+  nextOfKinPhone: z.string().optional().or(z.literal('')),
+  nextOfKinRelationship: z.string().optional().or(z.literal('')),
+  // Personal details for legal documents
+  tenantTitle: z.string().max(20, 'Title must not exceed 20 characters').optional().or(z.literal('')),
+  tenantGender: z.enum(['MALE', 'FEMALE', 'CORPORATE']).default('MALE'),
 }).refine(
   (data) => data.expiryDate > data.startDate,
   {
@@ -253,6 +325,29 @@ export const PaymentSchema = z.object({
 });
 
 export type PaymentInput = z.infer<typeof PaymentSchema>;
+
+// ============================================
+// EXPENSE SCHEMA (Operational Costs)
+// ============================================
+
+export const ExpenseSchema = z.object({
+  id: z.string().cuid().optional(),
+  amount: z.number()
+    .positive('Expense amount must be positive')
+    .max(1000000000, 'Expense amount seems unreasonably high')
+    .multipleOf(0.01, 'Amount must have at most 2 decimal places'),
+  date: z.date(),
+  category: z.enum(['REPAIR', 'AGENCY_FEE', 'LEGAL_FEE', 'UTILITY', 'OTHER']),
+  description: z.string()
+    .min(3, 'Description must be at least 3 characters')
+    .max(500, 'Description must not exceed 500 characters'),
+  tenancyId: z.string().cuid('Invalid tenancy ID').optional(),
+  propertyId: z.string().cuid('Invalid property ID'),
+  recordedBy: z.string().cuid('Invalid user ID').optional(), // Will be set server-side
+});
+
+export type ExpenseInput = z.infer<typeof ExpenseSchema>;
+
 
 // ============================================
 // AUDIT LOG SCHEMA

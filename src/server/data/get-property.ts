@@ -28,7 +28,24 @@ export async function getProperty(id: string) {
           startDate: 'desc',
         },
       },
+      units: {
+        include: {
+          tenancies: {
+            where: {
+              status: 'ACTIVE',
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
       documents: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      maintenanceRequests: {
         orderBy: {
           createdAt: 'desc',
         },

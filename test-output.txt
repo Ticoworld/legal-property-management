@@ -1,0 +1,47 @@
+
+Running 1 test using 1 worker
+
+✅ Step 1: Login successful
+✅ Step 2: Client created with bank details
+  ✘  1 [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator (30.8s)
+
+
+  1) [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.waitFor: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Select type")').nth(1) to be visible[22m
+
+
+      141 |     // Find all "Select type" buttons and click the second one
+      142 |     const allSelectTypeButtons = page.locator('button:has-text("Select type")');
+    > 143 |     await allSelectTypeButtons.nth(1).waitFor({ state: 'visible', timeout: 5000 });
+          |                                       ^
+      144 |     await allSelectTypeButtons.nth(1).click();
+      145 |     await page.waitForTimeout(500);
+      146 |     
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\e2e-full-flow.spec.ts:143:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator 
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

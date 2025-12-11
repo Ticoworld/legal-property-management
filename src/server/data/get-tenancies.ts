@@ -16,24 +16,26 @@ export type TenancyWithCalculations = {
   property: {
     id: string;
     address: string;
+    city: string;
+    state: string;
     owner: {
       firstName: string;
       lastName: string;
     };
   };
+  unit: {
+    name: string;
+    type: string;
+  } | null;
+  paymentFrequency: string;
   daysRemaining: number;
   outstandingBalance: number;
+  totalExpenses: number; // New field
   financialStatus: 'PAID' | 'OWING' | 'OVERPAID';
+  tenantPassportUrl: string | null;
+  verificationStatus: string;
 };
 
-/**
- * getTenancies
- *
- * Fetches all tenancies with property details and calculates:
- * - daysRemaining: Days until expiry
- * - outstandingBalance: (Rent + Deposit) - Total Paid
- * - financialStatus: PAID, OWING, or OVERPAID
- */
 export async function getTenancies(): Promise<TenancyWithCalculations[]> {
   const tenancies = await prisma.tenancy.findMany({
     orderBy: {
@@ -44,6 +46,8 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
         select: {
           id: true,
           address: true,
+          city: true,
+          state: true,
           owner: {
             select: {
               firstName: true,
@@ -52,10 +56,21 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
           },
         },
       },
+      unit: {
+        select: {
+          name: true,
+          type: true,
+        },
+      },
       payments: {
         select: {
           amount: true,
           type: true,
+        },
+      },
+      expenses: { // Include expenses
+        select: {
+          amount: true,
         },
       },
     },
@@ -77,6 +92,11 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
     // Calculate total paid
     const totalPaid = tenancy.payments.reduce((sum, payment) => {
       return sum + Number(payment.amount);
+    }, 0);
+
+    // Calculate total expenses
+    const totalExpenses = tenancy.expenses.reduce((sum, expense) => {
+      return sum + Number(expense.amount);
     }, 0);
 
     // Calculate outstanding balance
@@ -101,11 +121,17 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
       expiryDate: tenancy.expiryDate,
       annualRent: tenancy.annualRent,
       securityDeposit: tenancy.securityDeposit,
+      securityDeposit: tenancy.securityDeposit,
       status: tenancy.status,
+      paymentFrequency: tenancy.paymentFrequency,
+      unit: tenancy.unit,
       property: tenancy.property,
       daysRemaining,
       outstandingBalance,
+      totalExpenses, // Return computed total
       financialStatus,
+      tenantPassportUrl: tenancy.tenantPassportUrl,
+      verificationStatus: tenancy.verificationStatus,
     };
   });
 }

@@ -1,0 +1,53 @@
+
+Running 1 test using 1 worker
+
+✅ Step 1: Login successful
+✅ Step 2: Client created with bank details
+✅ Step 3: Multi-unit property created
+  ✘  1 [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator (45.5s)
+
+
+  1) [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Units', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('Units', { exact: true })[22m
+
+
+      182 |     
+      183 |     // Assert that the "Units" section is visible
+    > 184 |     await expect(page.getByText('Units', { exact: true })).toBeVisible({ timeout: 10000 });
+          |                                                            ^
+      185 |     
+      186 |     // Assert that exactly 6 Units are listed
+      187 |     // Look for unit cards or list items
+        at C:\Users\HomePC\Desktop\Next_projects\legal-property-management\tests\e2e-full-flow.spec.ts:184:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\e2e-full-flow-Full-Asset-L-c75a8--Details-and-Unit-Generator-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e-full-flow.spec.ts:7:7 › Full Asset Lifecycle › Complete flow with Bank Details and Unit Generator 
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

@@ -10,8 +10,11 @@ type ClientData = {
   email: string;
   phone: string;
   address: string | null;
-  nin: string | null;
+  bankName: string | null;
+  accountNumber: string | null;
+  accountName: string | null;
   bvn: string | null;
+  passportUrl: string | null;
 };
 
 type Props = {

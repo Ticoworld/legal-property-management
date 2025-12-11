@@ -10,6 +10,8 @@ import {
   Building2,
   ScrollText,
   Settings as SettingsIcon,
+  Wrench,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -23,7 +25,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { UserNav } from "@/components/layout/user-nav";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { CommandMenu } from "@/components/layout/command-menu";
 import type { Notification } from "@/server/data/get-notifications";
+import type { LucideIcon } from "lucide-react";
+import { canManageTeam } from "@/lib/permissions";
+import type { UserRole } from "@prisma/client";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -32,22 +38,32 @@ type DashboardShellProps = {
   notifications: Notification[];
 };
 
-type NavItem = { name: string; href: string; icon: any; critical?: boolean };
+type NavItem = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  critical?: boolean;
+};
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Clients", href: "/clients", icon: Users },
   { name: "Properties", href: "/properties", icon: Building2 },
+  { name: "Maintenance", href: "/maintenance", icon: Wrench },
+  { name: "Expenses", href: "/expenses", icon: Receipt },
   // Highlight this as critical
-  { name: "Tenancy Tracking", href: "/tenancies", icon: ScrollText, critical: true },
+  {
+    name: "Tenancy Tracking",
+    href: "/tenancies",
+    icon: ScrollText,
+    critical: true,
+  },
   { name: "Settings", href: "/settings", icon: SettingsIcon },
-] as const;
+];
 
 function BreadcrumbTrail() {
   const pathname = usePathname();
-  const segments = (pathname || "/")
-    .split("/")
-    .filter(Boolean);
+  const segments = (pathname || "/").split("/").filter(Boolean);
 
   const crumbs = [
     { label: "Home", href: "/" },
@@ -85,26 +101,39 @@ function BreadcrumbTrail() {
   );
 }
 
-export default function DashboardShell({ children, session, actionNeeded, notifications }: DashboardShellProps) {
+export default function DashboardShell({
+  children,
+  session,
+  actionNeeded,
+  notifications,
+}: DashboardShellProps) {
   const pathname = usePathname();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as { role?: string })?.role;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 w-64 border-r bg-card">
         <div className="flex h-16 items-center px-5 border-b">
-          <span className="text-lg font-semibold tracking-tight">Legal PM</span>
+          <span className="text-lg font-semibold tracking-tight">
+            Ogodo & Co.
+          </span>
         </div>
         <nav className="p-3">
           <ul className="space-y-1">
             {navItems.map((item) => {
-              // Hide Settings for non-admin users
-              if (item.name === 'Settings' && role !== 'ADMIN') {
+              // Hide Settings for non-SUPER_ADMIN/MANAGER users
+              const userRole = role as UserRole | undefined;
+              if (
+                item.name === "Settings" &&
+                (!userRole || !canManageTeam(userRole))
+              ) {
                 return null;
               }
               const Icon = item.icon;
-              const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+              const active =
+                pathname === item.href ||
+                (item.href !== "/" && pathname?.startsWith(item.href));
               return (
                 <li key={item.href}>
                   <Link
@@ -118,10 +147,24 @@ export default function DashboardShell({ children, session, actionNeeded, notifi
                   >
                     <span className="inline-flex items-center gap-3">
                       <Icon className="h-4 w-4" />
-                      <span className={cn("font-medium", item.critical && actionNeeded > 0 && "text-red-500 dark:text-red-400")}>{item.name}</span>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          item.critical &&
+                            actionNeeded > 0 &&
+                            "text-red-500 dark:text-red-400"
+                        )}
+                      >
+                        {item.name}
+                      </span>
                     </span>
                     {item.critical && actionNeeded > 0 && (
-                      <Badge variant="destructive" className="ml-auto bg-red-600 dark:bg-red-500 border-red-600 dark:border-red-500">Critical</Badge>
+                      <Badge
+                        variant="destructive"
+                        className="ml-auto bg-red-600 dark:bg-red-500 border-red-600 dark:border-red-500"
+                      >
+                        Critical
+                      </Badge>
                     )}
                   </Link>
                 </li>
@@ -136,19 +179,16 @@ export default function DashboardShell({ children, session, actionNeeded, notifi
         <div className="flex h-full items-center justify-between px-6">
           <BreadcrumbTrail />
           <div className="flex items-center gap-3">
+            <CommandMenu />
             <NotificationBell initialNotifications={notifications} />
-            {session?.user && (
-              <UserNav user={session.user} />
-            )}
+            {session?.user && <UserNav user={session.user} />}
           </div>
         </div>
       </header>
 
       {/* Main content */}
       <main className="pl-64 pt-16">
-        <div className="mx-auto max-w-7xl p-6">
-          {children}
-        </div>
+        <div className="mx-auto max-w-7xl p-6">{children}</div>
       </main>
     </div>
   );

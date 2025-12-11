@@ -21,6 +21,10 @@ model User {
   password      String   // Hashed with bcrypt
   role          UserRole @default(VIEWER)
   
+  // Recovery System
+  recoveryKey   String?  // Hashed with bcrypt
+  mustChangePassword Boolean @default(false)
+  
   // Timestamps
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -30,15 +34,30 @@ model User {
   accounts      Account[]
   sessions      Session[]
   payments      Payment[]   // Payments recorded by this user
+  expenses      Expense[]   // Expenses recorded by this user
   
   @@index([email])
   @@map("users")
 }
 
 enum UserRole {
-  ADMIN       // Full system access
+  SUPER_ADMIN // Business Owner - Full system access
+  MANAGER     // Head of Operations - Team management, approvals
   ASSOCIATE   // Can create/edit records
   VIEWER      // Read-only access
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Gender for proper pronoun usage in legal documents
+enum Gender {
+  MALE
+  FEMALE
+  CORPORATE  // Company/Organization
 }
 
 // ============================================
@@ -52,10 +71,22 @@ model Client {
   phone     String
   address   String?
   
+  // Banking Details - For Rent Remittance
+  bankName      String?
+  accountNumber String?
+  accountName   String?
+  
+  // Verification Status
+  verificationStatus VerificationStatus @default(PENDING)
+  
+  // Personal Details for Legal Documents
+  title     String?  // Mr, Mrs, Dr, Chief, Engr, etc.
+  gender    Gender   @default(MALE)
+  
   // PII - Stored ENCRYPTED at application level
-  // NEVER query raw NIN/BVN directly
-  nin       String?  // National Identification Number (Encrypted)
+  // NEVER query raw BVN directly
   bvn       String?  // Bank Verification Number (Encrypted)
+  passportUrl String? // Passport Photo URL
   
   // Timestamps
   createdAt DateTime @default(now())
@@ -74,33 +105,42 @@ model Client {
 // PROPERTY MODEL - The Legal Assets
 // ============================================
 model Property {
-  id                 String       @id @default(cuid())
+  id                 String                @id @default(cuid())
   address            String
   city               String
   state              NigerianState
   
   // Title Information
   titleType          TitleType
-  registrationNumber String       @unique
+  registrationNumber String                @unique
   surveyNumber       String?
   plotNumber         String?
   
   // Property Details
-  landArea           Float?       // In square meters
-  buildingArea       Float?       // In square meters
-  propertyType       PropertyType
+  landArea           Float?                // In square meters
+  buildingArea       Float?                // In square meters
+  
+  // Multi-Unit Support
+  structureType      PropertyStructureType @default(SINGLE_UNIT)
   
   // Ownership
   ownerId            String
-  owner              Client       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              Client                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  // Verification Status
+  verificationStatus VerificationStatus @default(PENDING)
   
   // Timestamps
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
   
   // Relations
+  units              PropertyUnit[]        // Multi-unit properties
   tenancies          Tenancy[]
   documents          Document[]
+  expenses           Expense[]             // Property expenses
+  maintenanceRequests MaintenanceRequest[] // Maintenance tickets
+  
   
   @@index([ownerId])
   @@index([state])
@@ -109,21 +149,30 @@ model Property {
 }
 
 enum TitleType {
-  CERTIFICATE_OF_OCCUPANCY  // C of O
-  DEED_OF_ASSIGNMENT
-  DEED_OF_CONVEYANCE
-  GOVERNORS_CONSENT
-  REGISTERED_CONVEYANCE
-  POWER_OF_ATTORNEY
+  IRREVOCABLE_POWER_OF_ATTORNEY
   OTHER
 }
 
-enum PropertyType {
-  RESIDENTIAL
-  COMMERCIAL
-  INDUSTRIAL
-  MIXED_USE
-  LAND
+enum PropertyStructureType {
+  SINGLE_UNIT          // Single family house, bungalow, duplex
+  BLOCK_OF_FLATS       // Multi-unit residential building
+  SHOPPING_COMPLEX     // Multiple commercial units
+  ESTATE               // Multiple buildings in a compound
+  LAND                 // Undeveloped land
+}
+
+enum UnitType {
+  ROOM_PARLOUR         // Room & Parlour (Nigerian style)
+  SELF_CONTAIN         // Self-contained (Nigerian style)
+  ONE_BEDROOM          // 1 Bedroom flat
+  TWO_BEDROOM          // 2 Bedroom flat
+  THREE_BEDROOM        // 3 Bedroom flat
+  FOUR_BEDROOM         // 4 Bedroom flat
+  DUPLEX               // Multi-level residential unit
+  SHOP                 // Commercial shop unit
+  WAREHOUSE            // Storage/warehouse unit
+  PLOT_OF_LAND         // Subdivided land plot
+  OFFICE               // Office space unit
 }
 
 enum NigerianState {
@@ -167,6 +216,35 @@ enum NigerianState {
 }
 
 // ============================================
+// PROPERTY UNIT MODEL - Individual Units within a Property
+// ============================================
+model PropertyUnit {
+  id          String    @id @default(cuid())
+  name        String    // e.g., "Flat 1", "Shop A", "Unit 2B"
+  type        UnitType  // Type of unit (bedroom count, shop, etc.)
+  
+  // Unit Details
+  bedrooms    Int?      // Number of bedrooms (for residential)
+  bathrooms   Int?      // Number of bathrooms (for residential)
+  marketRent  Decimal?  @db.Decimal(15, 2) // Asking rent for this unit
+  
+  // Relations
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  tenancies   Tenancy[] // Units can have multiple tenancies over time
+  maintenanceRequests MaintenanceRequest[] // Maintenance tickets
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([propertyId])
+  @@index([type])
+  @@map("property_units")
+}
+
+// ============================================
 // TENANCY MODEL - The Lease Agreements
 // ============================================
 model Tenancy {
@@ -176,6 +254,20 @@ model Tenancy {
   tenantName   String
   tenantEmail  String?
   tenantPhone  String
+  tenantPassportUrl String? // Tenant Passport Photo URL
+  tenantTitle  String?      // Mr, Mrs, Dr, Chief, etc.
+  tenantGender Gender @default(MALE)
+  
+  // Guarantor Details (Optional)
+  guarantorName     String?
+  guarantorPhone    String?
+  guarantorEmail    String?
+  guarantorAddress  String?
+  
+  // Next of Kin (Optional)
+  nextOfKinName         String?
+  nextOfKinPhone        String?
+  nextOfKinRelationship String?
   
   // Lease Terms
   startDate    DateTime
@@ -184,19 +276,29 @@ model Tenancy {
   status       TenancyStatus @default(ACTIVE)
   
   // Payment Terms
-  paymentFrequency String?    // e.g., "Annually", "Quarterly"
+  paymentFrequency PaymentFrequency? @default(ANNUALLY)
   securityDeposit  Decimal?   @db.Decimal(15, 2)
+  
+  // Verification Status
+  verificationStatus VerificationStatus @default(PENDING)
   
   // Relations
   propertyId   String
   property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  
+  unitId       String?       // Optional: For multi-unit properties
+  unit         PropertyUnit? @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  
   payments     Payment[]     // Financial tracking
+  expenses     Expense[]     // Expense tracking
+  maintenanceRequests MaintenanceRequest[] // Maintenance tickets
   
   // Timestamps
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   
   @@index([propertyId])
+  @@index([unitId])
   @@index([expiryDate])  // Critical for automated expiry alerts
   @@index([status])
   @@index([tenantName])
@@ -209,6 +311,13 @@ enum TenancyStatus {
   NOTICE_SERVED   // Notice to vacate has been served
   TERMINATED      // Lease was terminated early
   RENEWED         // Lease was renewed (historical record)
+}
+
+enum PaymentFrequency {
+  ANNUALLY
+  BI_ANNUALLY
+  QUARTERLY
+  MONTHLY
 }
 
 // ============================================
@@ -392,4 +501,108 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+// ============================================
+// EXPENSE TRACKING - Property & Tenancy Costs
+// ============================================
+enum ExpenseCategory {
+  REPAIR            // Plumbing, electrical, structural repairs
+  AGENCY_FEE        // Lawyer/agent commission
+  LEGAL_FEE         // Court fees, documentation
+  UTILITY           // PHCN, water, generator fuel
+  OTHER             // Miscellaneous expenses
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  amount      Decimal         @db.Decimal(15, 2)
+  date        DateTime
+  description String
+  category    ExpenseCategory
+  
+  // Relations
+  propertyId  String
+  property    Property        @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  
+  tenancyId   String?         // Optional - can be building-wide expense
+  tenancy     Tenancy?        @relation(fields: [tenancyId], references: [id], onDelete: Restrict)
+  
+  recordedBy  String
+  recordedByUser User         @relation(fields: [recordedBy], references: [id], onDelete: Restrict)
+  
+  // Timestamps
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@index([propertyId])
+  @@index([tenancyId])
+  @@index([date])
+  @@index([category])
+  @@map("expenses")
+}
+
+// ============================================
+// MAINTENANCE REQUEST - Tenant Complaint Tracking
+// ============================================
+enum MaintenanceStatus {
+  OPEN              // Just reported
+  IN_PROGRESS       // Being worked on
+  RESOLVED          // Fixed
+  CLOSED            // Closed without resolution / declined
+}
+
+enum MaintenancePriority {
+  LOW               // Minor inconvenience
+  MEDIUM            // Needs attention soon
+  HIGH              // Urgent - affects habitability
+  URGENT            // Emergency - safety hazard
+}
+
+model MaintenanceRequest {
+  id          String              @id @default(cuid())
+  title       String
+  description String              @db.Text
+  status      MaintenanceStatus   @default(OPEN)
+  priority    MaintenancePriority @default(MEDIUM)
+  
+  // Relations
+  propertyId  String
+  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  
+  unitId      String?
+  unit        PropertyUnit?       @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  
+  tenancyId   String?             // Who reported it
+  tenancy     Tenancy?            @relation(fields: [tenancyId], references: [id], onDelete: Restrict)
+  
+  // Timestamps
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  @@index([propertyId])
+  @@index([status])
+  @@index([priority])
+  @@index([tenancyId])
+  @@map("maintenance_requests")
+}
+
+// ============================================
+// FIRM SETTINGS - Dynamic Branding & Localization
+// ============================================
+model FirmSettings {
+  id             String   @id @default(cuid())
+  firmName       String   @default("Ogodo, Ogodo & Co.")
+  chambersName   String   @default("Beracah Chambers")
+  address        String   @default("14 Ojeawere Street, Abakaliki, Ebonyi State")
+  city           String   @default("Abakaliki")
+  state          String   @default("Ebonyi")
+  solicitorName  String   @default("K. O. Ogboso, Esq.")
+  solicitorTitle String   @default("Legal Practitioner")
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@map("firm_settings")
 }

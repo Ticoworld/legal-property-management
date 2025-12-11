@@ -1,4 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
+import type { UserRole } from "@prisma/client";
+
+// Valid roles for type guard
+const validRoles: UserRole[] = ['SUPER_ADMIN', 'MANAGER', 'ASSOCIATE', 'VIEWER'];
 
 // Base auth configuration: only route authorization logic here.
 export const authConfig = {
@@ -16,16 +20,16 @@ export const authConfig = {
       return !!auth?.user;
     },
     async jwt({ token, user }) {
-      const isRole = (r: unknown): r is 'ADMIN' | 'ASSOCIATE' | 'VIEWER' =>
-        r === 'ADMIN' || r === 'ASSOCIATE' || r === 'VIEWER';
-      if (user && 'role' in user && isRole((user as { role?: 'ADMIN'|'ASSOCIATE'|'VIEWER' }).role)) {
-        token.role = (user as { role?: 'ADMIN'|'ASSOCIATE'|'VIEWER' }).role;
+      const isRole = (r: unknown): r is UserRole =>
+        validRoles.includes(r as UserRole);
+      if (user && 'role' in user && isRole((user as { role?: UserRole }).role)) {
+        token.role = (user as { role?: UserRole }).role;
       }
       return token;
     },
     async session({ session, token }) {
-      const isRole = (r: unknown): r is 'ADMIN' | 'ASSOCIATE' | 'VIEWER' =>
-        r === 'ADMIN' || r === 'ASSOCIATE' || r === 'VIEWER';
+      const isRole = (r: unknown): r is UserRole =>
+        validRoles.includes(r as UserRole);
       if (token?.sub) {
         session.user.id = token.sub;
       }
@@ -36,3 +40,4 @@ export const authConfig = {
     },
   },
 } satisfies NextAuthConfig;
+
