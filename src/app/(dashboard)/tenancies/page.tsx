@@ -33,6 +33,7 @@ export default async function TenanciesPage({
     expiryDate: t.expiryDate.toISOString(),
     annualRent: t.annualRent.toString(),
     daysRemaining: t.daysRemaining,
+    daysUntilStart: t.daysUntilStart,
     outstandingBalance: t.outstandingBalance,
     totalExpenses: t.totalExpenses,
     financialStatus: t.financialStatus,

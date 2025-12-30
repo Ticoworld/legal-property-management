@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Resolver } from "react-hook-form";
 import { useSearchParams, useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { format, addYears, addMonths, subDays } from "date-fns";
 import { CalendarIcon, Check, ChevronsUpDown, Lock } from "lucide-react";
 import { TenancySchema, type TenancyInput } from "@/types/schema";
 import { createTenancy } from "@/server/actions/tenancy";
@@ -167,6 +167,36 @@ export default function TenancyForm({ onCreated, trigger }: Props) {
       }
     }
   }, [open, prefilledPropertyId, prefilledUnitId, form]);
+
+  // Auto-calculate Expiry Date based on Start Date and Frequency
+  const startDate = form.watch("startDate");
+  const frequency = form.watch("paymentFrequency");
+
+  useEffect(() => {
+    if (startDate && frequency) {
+      let newExpiry = new Date(startDate);
+
+      switch (frequency) {
+        case "ANNUALLY":
+          newExpiry = addYears(newExpiry, 1);
+          break;
+        case "BI_ANNUALLY":
+          newExpiry = addMonths(newExpiry, 6);
+          break;
+        case "QUARTERLY":
+          newExpiry = addMonths(newExpiry, 3);
+          break;
+        case "MONTHLY":
+          newExpiry = addMonths(newExpiry, 1);
+          break;
+      }
+
+      // Legal formula: Start + Duration - 1 Day
+      newExpiry = subDays(newExpiry, 1);
+
+      form.setValue("expiryDate", newExpiry);
+    }
+  }, [startDate, frequency, form]);
 
   async function onSubmit(values: TenancyFormInput) {
     try {
@@ -521,7 +551,7 @@ export default function TenancyForm({ onCreated, trigger }: Props) {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Start Date</FormLabel>
+                      <FormLabel>Rent Commencement Date</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -550,6 +580,10 @@ export default function TenancyForm({ onCreated, trigger }: Props) {
                           />
                         </PopoverContent>
                       </Popover>
+                      <p className="text-[0.8rem] text-muted-foreground mt-1">
+                        Rent counts from this date, regardless of when payment
+                        was made.
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

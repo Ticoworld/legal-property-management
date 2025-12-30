@@ -64,6 +64,7 @@ export type TenancyRow = {
   expiryDate: string; // ISO
   annualRent: string; // Decimal as string
   daysRemaining: number;
+  daysUntilStart: number;
   outstandingBalance: number;
   totalExpenses: number;
   financialStatus: "PAID" | "OWING" | "OVERPAID";
@@ -84,7 +85,17 @@ function getStatus(expiryDate: Date) {
   return { label: "Active", variant: "default" as const };
 }
 
-function getTimeLeftBadge(daysRemaining: number) {
+function getTimeLeftBadge(daysRemaining: number, daysUntilStart: number) {
+  // 1. Future Tenancy (Not Started)
+  if (daysUntilStart > 0) {
+    return {
+      label: `Starts in ${daysUntilStart} Days`,
+      variant: "secondary" as const,
+      className: "bg-blue-600 text-white font-bold",
+    };
+  }
+
+  // 2. Expired
   if (daysRemaining <= 0) {
     return {
       label: "Expired",
@@ -93,6 +104,7 @@ function getTimeLeftBadge(daysRemaining: number) {
     };
   }
 
+  // 3. Expiring Soon (< 30 Days)
   if (daysRemaining < 30) {
     return {
       label: `${daysRemaining} Days`,
@@ -101,6 +113,7 @@ function getTimeLeftBadge(daysRemaining: number) {
     };
   }
 
+  // 4. Expiring Soon (< 90 Days)
   if (daysRemaining < 90) {
     const months = Math.floor(daysRemaining / 30);
     return {
@@ -110,7 +123,7 @@ function getTimeLeftBadge(daysRemaining: number) {
     };
   }
 
-  // > 90 days
+  // 5. Active (> 90 Days)
   const months = Math.floor(daysRemaining / 30);
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
@@ -181,7 +194,7 @@ export default function TenanciesTable({
       } else {
         toast.error(result.message);
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to approve tenancy");
     }
   };
@@ -395,7 +408,10 @@ export default function TenanciesTable({
             {filtered.map((r) => {
               const expiryDate = new Date(r.expiryDate);
               const status = getStatus(expiryDate);
-              const timeLeftBadge = getTimeLeftBadge(r.daysRemaining);
+              const timeLeftBadge = getTimeLeftBadge(
+                r.daysRemaining,
+                r.daysUntilStart
+              );
 
               return (
                 <TableRow key={r.id}>

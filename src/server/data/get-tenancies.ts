@@ -29,6 +29,7 @@ export type TenancyWithCalculations = {
   } | null;
   paymentFrequency: string;
   daysRemaining: number;
+  daysUntilStart: number;
   outstandingBalance: number;
   totalExpenses: number; // New field
   financialStatus: 'PAID' | 'OWING' | 'OVERPAID';
@@ -83,6 +84,11 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
     const daysRemaining = Math.ceil(
       (tenancy.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
     );
+    
+    // Calculate days until start
+    const daysUntilStart = Math.ceil(
+      (tenancy.startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // Calculate total expected (rent + deposit)
     const rentAmount = Number(tenancy.annualRent);
@@ -121,12 +127,12 @@ export async function getTenancies(): Promise<TenancyWithCalculations[]> {
       expiryDate: tenancy.expiryDate,
       annualRent: tenancy.annualRent,
       securityDeposit: tenancy.securityDeposit,
-      securityDeposit: tenancy.securityDeposit,
       status: tenancy.status,
-      paymentFrequency: tenancy.paymentFrequency,
+      paymentFrequency: tenancy.paymentFrequency || 'N/A',
       unit: tenancy.unit,
       property: tenancy.property,
       daysRemaining,
+      daysUntilStart,
       outstandingBalance,
       totalExpenses, // Return computed total
       financialStatus,

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "tenancies" ALTER COLUMN "startDate" SET DEFAULT CURRENT_TIMESTAMP;

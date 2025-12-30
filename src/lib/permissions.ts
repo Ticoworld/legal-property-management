@@ -15,7 +15,7 @@ import { UserRole } from "@prisma/client";
  * Only SUPER_ADMIN (Business Owner) should see financials
  */
 export function canViewFinancials(role: UserRole): boolean {
-  return role === "SUPER_ADMIN";
+  return role === "SUPER_ADMIN" || role === "MANAGER";
 }
 
 /**

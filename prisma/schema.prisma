@@ -270,7 +270,7 @@ model Tenancy {
   nextOfKinRelationship String?
   
   // Lease Terms
-  startDate    DateTime
+  startDate    DateTime      @default(now())
   expiryDate   DateTime      // INDEXED for expiry tracking
   annualRent   Decimal       @db.Decimal(15, 2)
   status       TenancyStatus @default(ACTIVE)

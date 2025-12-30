@@ -1,6 +1,14 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+"use client";
+
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function NotFound() {
   return (
@@ -23,7 +31,9 @@ export default function NotFound() {
               />
             </svg>
           </div>
-          <CardTitle className="text-2xl font-bold text-white">Page Not Found</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">
+            Page Not Found
+          </CardTitle>
           <CardDescription className="text-zinc-400">
             The page you&apos;re looking for doesn&apos;t exist
           </CardDescription>
@@ -33,7 +43,8 @@ export default function NotFound() {
             <p className="text-6xl font-bold text-zinc-700">404</p>
           </div>
           <p className="text-center text-sm text-zinc-500">
-            The page may have been moved or deleted. Please check the URL or return to the dashboard.
+            The page may have been moved or deleted. Please check the URL or
+            return to the dashboard.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild variant="default" className="w-full">
