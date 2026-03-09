@@ -1,5 +1,7 @@
 import { DefaultSession } from "next-auth";
-import { UserRole } from "@prisma/client";
+
+// Inline to avoid @prisma/client import in Edge-resolved type context
+type UserRole = 'SUPER_ADMIN' | 'MANAGER' | 'ASSOCIATE' | 'VIEWER';
 
 declare module "next-auth" {
   interface Session {

@@ -1,5 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
-import type { UserRole } from "@prisma/client";
+
+// Inline role type to keep this file Edge-safe (no @prisma/client import)
+type UserRole = 'SUPER_ADMIN' | 'MANAGER' | 'ASSOCIATE' | 'VIEWER';
 
 // Valid roles for type guard
 const validRoles: UserRole[] = ['SUPER_ADMIN', 'MANAGER', 'ASSOCIATE', 'VIEWER'];

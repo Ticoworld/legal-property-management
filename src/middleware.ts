@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+// Edge-safe auth — uses auth.config.ts only (no Prisma/pg/bcrypt)
+const { auth } = NextAuth(authConfig);
 
 // Protect all application routes except /login and static assets
-export async function middleware(req: NextRequest) {
+export default auth(async function middleware(req) {
   const { pathname } = req.nextUrl;
 
   // Allow unauthenticated access to login, setup & static assets
@@ -19,14 +22,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const session = await auth();
-  if (!session?.user) {
+  if (!req.auth?.user) {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Force password change if required
-  if (session.user.mustChangePassword) {
+  if (req.auth.user.mustChangePassword) {
     // Whitelist the force-change page and API routes
     if (!pathname.startsWith("/auth/force-change") && !pathname.startsWith("/api/auth")) {
       const forceChangeUrl = new URL("/auth/force-change", req.url);
@@ -49,8 +51,8 @@ export async function middleware(req: NextRequest) {
       headers: requestHeaders,
     },
   });
-}
+});
 
 export const config = {
-  matcher: ["/(.*)"], // Evaluate all paths, logic above whitelists public ones
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
